@@ -1,0 +1,205 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. DATA PLATFORM UTAMA (MULTI-TENANT)
+model Company {
+  id             Int       @id @default(autoincrement())
+  name           String    // Nama Pabrik / Perusahaan
+  subscription   String    // Misal: "FREE", "PRO", "ENTERPRISE"
+  
+  // Relasi: Satu perusahaan memiliki banyak...
+  users          User[]
+  machines       Machine[]
+  products       Product[]
+  activityCodes  ActivityCode[]
+  okpLogs        OkpLog[]
+  kpiTarget      KpiTarget?
+  dmsActions     DmsAction[]
+  mqttConfigs    MqttConfig[]
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  role       String   // Misal: "OWNER", "MANAGER", "OPERATOR"
+  
+  companyId  Int
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// 2. MASTER DATA (Global untuk OEE)
+model ActivityCategory {
+  id          Int            @id @default(autoincrement())
+  code        String         @unique // "PR", "SH", "BR", "SE", "MI", "CT", "OT", "ST"
+  name        String         
+  activities  ActivityCode[]
+}
+
+// 3. MASTER DATA (Spesifik per Company)
+model ActivityCode {
+  id              Int              @id @default(autoincrement())
+  companyId       Int              // Wajib ada untuk isolasi data
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  categoryId      Int           
+  category        ActivityCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  
+  code            String           // Misal: "sh.1"
+  mainActivity    String?          // Kategori Utama (Misal: "AM Activity")
+  subActivity     String?          // Sub-Kategori (Misal: "- Weekly Cleaning")
+  fullDescription String           // Misal: "AM activity - Weekly Cleaning"
+  
+  logs            ActivityLog[]
+}
+
+model Machine {
+  id         Int         @id @default(autoincrement())
+  companyId  Int   
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name       String   
+  okpLogs    OkpLog[]
+  mqttConfig MqttConfig?
+}
+
+model Product {
+  id           Int      @id @default(autoincrement())
+  companyId    Int   
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productCode  String?  // Kode Produk dari ERP/Oracle
+  name         String   // Nama Produk
+  size         String?  // Ukuran (Misal: 800gr)
+  standarSpeed Float    // pcs/menit
+  okpLogs      OkpLog[]
+}
+
+// 4. TRANSACTION DATA (Transaksi per Company)
+model OkpLog {
+  id           Int      @id @default(autoincrement())
+  companyId    Int   
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  okpNumber    String   // Catatan: Kombinasi unique dengan companyId disarankan di level database
+  date         DateTime 
+  shift        Int      
+  
+  machineId    Int
+  machine      Machine  @relation(fields: [machineId], references: [id], onDelete: Restrict)
+  productId    Int
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  // Data Man Power
+  groupLeader  String?
+  operator     String?
+  helper       String?
+
+  loadingTime  Float    // Menit
+  totalOutput  Float    // (CB / Pcs)
+  rework       Float    // (Kg / Pcs)
+  reject       Float    // (Kg / Pcs)
+  sampleQc     Float?   // (FB)
+
+  activities   ActivityLog[]
+  dmsActions   DmsAction[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([companyId, okpNumber]) // Satu OKP Number harus unik di dalam satu Company
+}
+
+model ActivityLog {
+  id             Int          @id @default(autoincrement())
+  
+  okpLogId       Int       
+  okpLog         OkpLog       @relation(fields: [okpLogId], references: [id], onDelete: Cascade)
+  
+  activityCodeId Int       
+  activityCode   ActivityCode @relation(fields: [activityCodeId], references: [id], onDelete: Restrict)
+  
+  duration       Float        // Dalam Menit
+  startTime      DateTime?    // Sensor IoT trigger Run/Stop
+  endTime        DateTime?
+
+  // Khusus Breakdown (BR) - Detail Root Cause / MTDT
+  brRootCause    String?      // Enum/String: "8 Basic Competency", "4M", "AM/PM"
+  brMtdtWaiting  Float?       // Menit Menunggu Teknisi
+  brMtdtRepair   Float?       // Menit Perbaikan
+  brMtdtStartup  Float?       // Menit Start Up / Trial
+}
+
+// 5. STAGE 3 DATA (KPI TARGET & SHOPFLOOR DAILY MANAGEMENT SYSTEM)
+model KpiTarget {
+  id           Int      @id @default(autoincrement())
+  companyId    Int      @unique
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  oeeTarget    Float    @default(85.0)
+  availTarget  Float    @default(90.0)
+  perfTarget   Float    @default(95.0)
+  qualTarget   Float    @default(99.0)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model DmsAction {
+  id           Int       @id @default(autoincrement())
+  companyId    Int   
+  company      Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  okpLogId     Int?   
+  okpLog       OkpLog?   @relation(fields: [okpLogId], references: [id], onDelete: SetNull)
+  
+  downtimeCode String    // Misal: "BR.007"
+  actionPlan   String    // Tindakan Perbaikan
+  pic          String    // Person In Charge / Teknisi
+  targetDate   DateTime? 
+  status       String    @default("OPEN") // "OPEN", "IN_PROGRESS", "CLOSED"
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// 6. INDUSTRIAL IOT ACQUISITION CONFIGURATION (FLEXIBLE MQTT)
+model MqttConfig {
+  id              Int      @id @default(autoincrement())
+  companyId       Int
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  machineId       Int      @unique // 1 machine has 1 active MQTT sensor integration configuration
+  machine         Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  
+  brokerUrl       String   @default("mqtt://127.0.0.1:1883")
+  clientId        String?  // Custom Client ID for MQTT Broker
+  username        String?
+  password        String?
+  
+  // Konfigurasi Sensor Counter Output (Photoeye / Proximity)
+  counterTopic    String?  // Topic untuk counter output (misal: "kmi/lineA4/counter")
+  counterJsonPath String?  // JSON Path jika payload berupa JSON Object (misal: "$.qty")
+  
+  // Konfigurasi Sensor Status Mesin (Run / Stop / Standby)
+  statusTopic     String?  // Topic untuk status mesin (misal: "kmi/lineA4/status")
+  statusJsonPath  String?  // JSON Path jika payload berupa JSON Object (misal: "$.state")
+  statusRunValue  String   @default("RUN") // Nilai penanda Running (misal: "1" atau "RUN")
+  statusStopValue String   @default("STOP") // Nilai penanda Stopped (misal: "0" atau "STOP")
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
