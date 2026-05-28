@@ -52,6 +52,161 @@ interface ActivityEntry {
   brMtdtStartup?: string;
 }
 
+function SearchableGroupedSelect({
+  value,
+  onChange,
+  options,
+  disabled
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: ActivityCode[];
+  disabled?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(o => String(o.id) === value);
+
+  // Extract unique categories
+  const categories = options.reduce((acc, curr) => {
+    const name = curr.category.name;
+    const code = curr.category.code;
+    if (!acc.some(c => c.name === name)) {
+      acc.push({ name, code });
+    }
+    return acc;
+  }, [] as { name: string; code: string }[]);
+
+  // Filter options based on selected category and search query
+  const filteredOptions = options.filter(o => {
+    const matchesCat = selectedCat ? o.category.name === selectedCat : true;
+    const matchesSearch = o.code.toLowerCase().includes(search.toLowerCase()) ||
+      o.fullDescription.toLowerCase().includes(search.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
+
+  return (
+    <div className="relative w-full font-mono text-xs" ref={dropdownRef}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          if (!isOpen && selectedOption) {
+            setSelectedCat(selectedOption.category.name);
+          }
+        }}
+        className="w-full text-left px-3 py-2 bg-[#161b22] border border-[#30363d] hover:border-zinc-500 rounded-lg text-zinc-200 focus:outline-none flex justify-between items-center transition-all disabled:opacity-50"
+      >
+        <span className="truncate pr-2">
+          {selectedOption
+            ? `[${selectedOption.code.toUpperCase()}] - ${selectedOption.fullDescription}`
+            : "-- Pilih Kode Aktivitas --"}
+        </span>
+        <span className="text-[#8e8b94] ml-auto text-[10px] shrink-0">▼</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-1.5 w-full z-50 max-h-80 overflow-y-auto bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl p-3.5 flex flex-col gap-3 animate-in fade-in slide-in-from-top-1 duration-150">
+
+          {/* STEP 1: SELECT CATEGORY */}
+          {!selectedCat ? (
+            <div className="flex flex-col gap-2">
+              <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider pb-1.5 border-b border-[#30363d] font-sans">
+                Pilih Kategori :
+              </div>
+              <div className="flex flex-col gap-1.5 py-1">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.name}
+                    type="button"
+                    onClick={() => setSelectedCat(cat.name)}
+                    className="w-full text-left px-3 py-2 bg-[#0d1117] hover:bg-[#21262d] border border-[#30363d] hover:border-zinc-500 rounded-lg text-zinc-200 flex items-center justify-between transition-all"
+                  >
+                    <span className="font-semibold text-xs font-sans">{cat.name}</span>
+                    <span className="font-extrabold text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 tracking-wider">
+                      {cat.code.toUpperCase()}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* STEP 2: SELECT ACTIVITY CODE IN SELECTED CATEGORY */
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between pb-1.5 border-b border-[#30363d]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCat(null);
+                    setSearch("");
+                  }}
+                  className="text-[10px] font-extrabold text-[#fed130] hover:text-white uppercase tracking-wider flex items-center gap-1 transition-colors font-sans"
+                >
+                  ← Ganti Kategori
+                </button>
+                <span className="text-[10px] font-extrabold text-[#5ebd56] uppercase tracking-wider bg-[#5ebd56]/10 px-2 py-0.5 rounded border border-[#5ebd56]/20 font-sans">
+                  {selectedCat}
+                </span>
+              </div>
+
+              <div className="sticky top-0 bg-[#161b22] pb-1.5 z-10">
+                <input
+                  type="text"
+                  placeholder={`Cari di kategori ${selectedCat}...`}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] focus:border-[#5ebd56] rounded-md text-zinc-200 text-xs focus:outline-none"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex flex-col gap-1 py-1 max-h-48 overflow-y-auto">
+                {filteredOptions.length === 0 ? (
+                  <div className="text-center py-4 text-[#8e8b94] italic font-sans">
+                    Tidak ada kode aktivitas yang cocok.
+                  </div>
+                ) : (
+                  filteredOptions.map((ac) => (
+                    <button
+                      key={ac.id}
+                      type="button"
+                      onClick={() => {
+                        onChange(String(ac.id));
+                        setIsOpen(false);
+                        setSearch("");
+                      }}
+                      className={`w-full text-left px-2 py-2 rounded hover:bg-[#21262d] flex items-start gap-2.5 transition-colors ${value === String(ac.id) ? "bg-[#21262d] border border-[#5ebd56]/30 text-white" : "text-zinc-300"
+                        }`}
+                    >
+                      <span className="font-extrabold text-[#fed130] bg-[#fed130]/10 border border-[#fed130]/20 px-1.5 py-0.5 rounded text-[10px] tracking-wide shrink-0 font-mono">
+                        {ac.code.toUpperCase()}
+                      </span>
+                      <span className="leading-snug font-sans text-xs">{ac.fullDescription}</span>
+                    </button>
+                  )))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CreateOKPLogPage() {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(1);
@@ -366,13 +521,12 @@ export default function CreateOKPLogPage() {
               <React.Fragment key={s.step}>
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border transition-all ${
-                      isCompleted
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border transition-all ${isCompleted
                         ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/30"
                         : isActive
-                        ? "bg-cyan-500 text-zinc-950 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]"
-                        : "bg-[#0d1117] text-zinc-500 border-[#30363d]"
-                    }`}
+                          ? "bg-cyan-500 text-zinc-950 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]"
+                          : "bg-[#0d1117] text-zinc-500 border-[#30363d]"
+                      }`}
                   >
                     {isCompleted ? <CheckCircle className="w-4 h-4 text-cyan-400" /> : idx + 1}
                   </div>
@@ -539,11 +693,10 @@ export default function CreateOKPLogPage() {
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-xs font-bold text-zinc-400">LOADING TIME LOGS:</span>
                 <span
-                  className={`px-3 py-1 font-mono font-bold text-xs rounded border transition-all ${
-                    Math.abs(remainingTime) < 0.01
+                  className={`px-3 py-1 font-mono font-bold text-xs rounded border transition-all ${Math.abs(remainingTime) < 0.01
                       ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                       : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                  }`}
+                    }`}
                 >
                   {sumDurations} / {loadingTime} mins ({remainingTime}m left)
                 </span>
@@ -554,7 +707,7 @@ export default function CreateOKPLogPage() {
                     className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-zinc-950 font-bold text-[10px] rounded transition-all cursor-pointer shadow-md uppercase tracking-wider flex items-center gap-1 font-mono border border-emerald-400/20"
                     title="Alokasikan sisa waktu sebagai Productive Run (PR)"
                   >
-                    ⚡ Auto-Fill Run Time ({remainingTime}m)
+                    Auto-Fill Run Time ({remainingTime}m)
                   </button>
                 )}
               </div>
@@ -565,18 +718,11 @@ export default function CreateOKPLogPage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="flex flex-col gap-1 md:col-span-2">
                   <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">Activity Code *</label>
-                  <select
+                  <SearchableGroupedSelect
                     value={selectedActCodeId}
-                    onChange={(e) => setSelectedActCodeId(e.target.value)}
-                    className="px-3.5 py-2 bg-[#161b22] border border-[#30363d] rounded-lg text-xs text-zinc-100 focus:outline-none focus:border-cyan-500/50"
-                  >
-                    <option value="">-- Pilih Kode Aktivitas --</option>
-                    {activityCodes.map((ac) => (
-                      <option key={ac.id} value={ac.id}>
-                        [{ac.code.toUpperCase()}] {ac.fullDescription}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSelectedActCodeId(val)}
+                    options={activityCodes}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -654,13 +800,12 @@ export default function CreateOKPLogPage() {
                         <td className="py-3.5 px-5 font-medium">{act.description}</td>
                         <td className="py-3.5 px-5 text-center">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                              act.categoryCode === "PR"
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold border ${act.categoryCode === "PR"
                                 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                                 : act.categoryCode === "BR"
-                                ? "bg-red-500/10 text-red-400 border-red-500/20"
-                                : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                            }`}
+                                  ? "bg-red-500/10 text-red-400 border-red-500/20"
+                                  : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                              }`}
                           >
                             {act.categoryCode}
                           </span>
@@ -778,9 +923,8 @@ export default function CreateOKPLogPage() {
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-800/40 text-[10px]">
                       <span className="text-zinc-500">MTDT Sum = Waiting + Repair + Startup</span>
                       <span
-                        className={`font-semibold font-mono ${
-                          totalMtdt > limit ? "text-red-400" : "text-emerald-400"
-                        }`}
+                        className={`font-semibold font-mono ${totalMtdt > limit ? "text-red-400" : "text-emerald-400"
+                          }`}
                       >
                         Total MTDT: {totalMtdt}m / Limit: {limit}m
                       </span>

@@ -1,16 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  Wifi, 
-  Cpu, 
-  Settings, 
-  Plus, 
-  Trash2, 
-  Edit3, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Loader2, 
+import {
+  Wifi,
+  Cpu,
+  Settings,
+  Plus,
+  Trash2,
+  Edit3,
+  CheckCircle2,
+  AlertTriangle,
+  Loader2,
   ArrowRight,
   Info,
   ExternalLink
@@ -167,7 +167,7 @@ export default function MqttConfigPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto flex flex-col gap-6 select-none">
-      
+
       {/* HEADER SECTION */}
       <div className="flex items-center justify-between border-b border-[#26232b] pb-5">
         <div>
@@ -176,7 +176,7 @@ export default function MqttConfigPage() {
             MQTT Sensor Telemetry Acquisition
           </h1>
           <p className="text-xs text-[#8e8b94] mt-1">
-            Konfigurasikan integrasi sensor IOT MQTT (Photoeye Counter, Status Relay) secara fleksibel per mesin produksi.
+            Konfigurasikan integrasi sensor IOT MQTT
           </p>
         </div>
 
@@ -216,7 +216,7 @@ export default function MqttConfigPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            
+
             {/* 1. Target Machine Selection */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold uppercase tracking-wider text-[#8e8b94]">Mesin Produksi</label>
@@ -287,7 +287,7 @@ export default function MqttConfigPage() {
 
           {/* TELEMETRY SENSOR SEGMENTATIONS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
-            
+
             {/* LEFT: SENSOR COUNTER FG (Photoeye / Proximity) */}
             <div className="bg-[#232029]/60 border border-[#26232b] rounded-xl p-4 flex flex-col gap-3">
               <div className="flex items-center gap-1.5 border-b border-[#26232b]/80 pb-2">
@@ -310,7 +310,7 @@ export default function MqttConfigPage() {
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-bold uppercase tracking-wider text-[#8e8b94] flex items-center gap-1">
                     JSON Path (Optional)
-                    <span className="group relative cursor-pointer text-[#5ebd56]"><Info className="w-3 h-3"/>
+                    <span className="group relative cursor-pointer text-[#5ebd56]"><Info className="w-3 h-3" />
                       <span className="absolute hidden group-hover:block bg-[#1c1a21] border border-[#26232b] p-2 rounded text-[8px] text-zinc-300 w-44 z-50 mt-1">
                         Gunakan $.qty jika payload bernilai {"{\"qty\": 5}"}. Kosongkan jika mengirim angka murni.
                       </span>
@@ -484,7 +484,7 @@ export default function MqttConfigPage() {
                         <div className="flex flex-col gap-1 font-mono text-[10px] text-sky-400">
                           <span>{config.statusTopic}</span>
                           <span className="text-[8px] text-[#8e8b94] flex items-center gap-1">
-                            RUN: <strong className="text-emerald-400">{config.statusRunValue}</strong> | 
+                            RUN: <strong className="text-emerald-400">{config.statusRunValue}</strong> |
                             STOP: <strong className="text-rose-400">{config.statusStopValue}</strong>
                           </span>
                         </div>

@@ -38,6 +38,161 @@ interface OKPLog {
   activities: ActivityLog[];
 }
 
+function SearchableGroupedSelect({
+  value,
+  onChange,
+  options,
+  disabled
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: ActivityCode[];
+  disabled?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(o => String(o.id) === value);
+
+  // Extract unique categories
+  const categories = options.reduce((acc, curr) => {
+    const name = curr.category.name;
+    const code = curr.category.code;
+    if (!acc.some(c => c.name === name)) {
+      acc.push({ name, code });
+    }
+    return acc;
+  }, [] as { name: string; code: string }[]);
+
+  // Filter options based on selected category and search query
+  const filteredOptions = options.filter(o => {
+    const matchesCat = selectedCat ? o.category.name === selectedCat : true;
+    const matchesSearch = o.code.toLowerCase().includes(search.toLowerCase()) ||
+      o.fullDescription.toLowerCase().includes(search.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
+
+  return (
+    <div className="relative w-full font-mono text-xs" ref={dropdownRef}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          if (!isOpen && selectedOption) {
+            setSelectedCat(selectedOption.category.name);
+          }
+        }}
+        className="w-full text-left px-3 py-2.5 bg-[#0d1117] border border-[#30363d] hover:border-zinc-500 rounded-lg text-zinc-200 focus:outline-none flex justify-between items-center transition-all disabled:opacity-50"
+      >
+        <span className="truncate pr-2">
+          {selectedOption
+            ? `[${selectedOption.code.toUpperCase()}] - ${selectedOption.fullDescription}`
+            : "-- Pilih Kode Penyesuaian --"}
+        </span>
+        <span className="text-[#8e8b94] ml-auto text-[10px] shrink-0">▼</span>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-1.5 w-full z-50 max-h-80 overflow-y-auto bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl p-3.5 flex flex-col gap-3 animate-in fade-in slide-in-from-top-1 duration-150">
+
+          {/* STEP 1: SELECT CATEGORY */}
+          {!selectedCat ? (
+            <div className="flex flex-col gap-2">
+              <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider pb-1.5 border-b border-[#30363d] font-sans">
+                Pilih Kategori :
+              </div>
+              <div className="flex flex-col gap-1.5 py-1">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.name}
+                    type="button"
+                    onClick={() => setSelectedCat(cat.name)}
+                    className="w-full text-left px-3 py-2 bg-[#0d1117] hover:bg-[#21262d] border border-[#30363d] hover:border-zinc-500 rounded-lg text-zinc-200 flex items-center justify-between transition-all"
+                  >
+                    <span className="font-semibold text-xs font-sans">{cat.name}</span>
+                    <span className="font-extrabold text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 tracking-wider">
+                      {cat.code.toUpperCase()}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* STEP 2: SELECT ACTIVITY CODE IN SELECTED CATEGORY */
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between pb-1.5 border-b border-[#30363d]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCat(null);
+                    setSearch("");
+                  }}
+                  className="text-[10px] font-extrabold text-[#fed130] hover:text-white uppercase tracking-wider flex items-center gap-1 transition-colors font-sans"
+                >
+                  ← Ganti Kategori
+                </button>
+                <span className="text-[10px] font-extrabold text-[#5ebd56] uppercase tracking-wider bg-[#5ebd56]/10 px-2 py-0.5 rounded border border-[#5ebd56]/20 font-sans">
+                  {selectedCat}
+                </span>
+              </div>
+
+              <div className="sticky top-0 bg-[#161b22] pb-1.5 z-10">
+                <input
+                  type="text"
+                  placeholder={`Cari di kategori ${selectedCat}...`}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-[#0d1117] border border-[#30363d] focus:border-[#5ebd56] rounded-md text-zinc-200 text-xs focus:outline-none"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex flex-col gap-1 py-1 max-h-48 overflow-y-auto">
+                {filteredOptions.length === 0 ? (
+                  <div className="text-center py-4 text-[#8e8b94] italic font-sans">
+                    Tidak ada kode aktivitas yang cocok.
+                  </div>
+                ) : (
+                  filteredOptions.map((ac) => (
+                    <button
+                      key={ac.id}
+                      type="button"
+                      onClick={() => {
+                        onChange(String(ac.id));
+                        setIsOpen(false);
+                        setSearch("");
+                      }}
+                      className={`w-full text-left px-2 py-2 rounded hover:bg-[#21262d] flex items-start gap-2.5 transition-colors ${value === String(ac.id) ? "bg-[#21262d] border border-[#5ebd56]/30 text-white" : "text-zinc-300"
+                        }`}
+                    >
+                      <span className="font-extrabold text-[#fed130] bg-[#fed130]/10 border border-[#fed130]/20 px-1.5 py-0.5 rounded text-[10px] tracking-wide shrink-0 font-mono">
+                        {ac.code.toUpperCase()}
+                      </span>
+                      <span className="leading-snug font-sans text-xs">{ac.fullDescription}</span>
+                    </button>
+                  )))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdjustActivityPage() {
   const router = useRouter();
   const { id } = useParams() as { id: string };
@@ -173,7 +328,7 @@ export default function AdjustActivityPage() {
 
   return (
     <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto w-full bg-[#141318] text-[#f4f3f6] relative z-10">
-      
+
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#26232b] pb-5">
         <div className="flex items-center gap-4">
@@ -236,7 +391,7 @@ export default function AdjustActivityPage() {
                     <span className="text-[10px] ml-auto bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded font-normal font-sans uppercase">Read Only</span>
                   </div>
                 </th>
-                
+
                 {/* MIDDLE ARROW COLUMN */}
                 <th className="py-4 px-2 text-center w-12 border-r border-[#26232b] bg-[#141318]/70">
                   <div className="flex items-center justify-center">
@@ -266,10 +421,10 @@ export default function AdjustActivityPage() {
                   const state = rowStates[act.id] || { activityCodeId: "", reason: "", isSubmitting: false };
                   const isBreakdown = act.activityCode.category.code === "BR";
                   const isRun = act.activityCode.category.code === "PR";
-                  
+
                   return (
                     <tr key={act.id} className="hover:bg-[#232029]/10 transition-colors align-top">
-                      
+
                       {/* LEFT SIDE: Original Telemetry Log Block */}
                       <td className="py-4 px-5 border-r border-[#26232b] bg-[#141318]/10">
                         <div className="flex flex-col gap-1.5">
@@ -281,7 +436,7 @@ export default function AdjustActivityPage() {
                               {okpLog.machine.name}
                             </span>
                           </div>
-                          
+
                           <div className="flex flex-col gap-0.5 mt-1">
                             <span className="text-[10px] text-[#8e8b94] uppercase font-sans">Article Code Regist:</span>
                             <span className={`text-xs font-extrabold ${isRun ? "text-[#5ebd56]" : "text-[#fed130]"}`}>
@@ -314,19 +469,12 @@ export default function AdjustActivityPage() {
                             <label className="text-[10px] font-bold text-zinc-400 uppercase font-sans tracking-wide">
                               Adjust Article Code *
                             </label>
-                            <select
+                            <SearchableGroupedSelect
                               value={state.activityCodeId}
-                              onChange={(e) => handleRowChange(act.id, "activityCodeId", e.target.value)}
+                              onChange={(val) => handleRowChange(act.id, "activityCodeId", val)}
+                              options={activityCodes}
                               disabled={state.isSubmitting}
-                              className="w-full px-3 py-2 bg-[#0d1117] border border-[#30363d] rounded-lg text-xs text-zinc-200 focus:outline-none focus:border-[#5ebd56] disabled:opacity-50"
-                            >
-                              <option value="">-- Pilih Kode Penyesuaian --</option>
-                              {activityCodes.map((ac) => (
-                                <option key={ac.id} value={ac.id}>
-                                  [{ac.code.toUpperCase()}] &gt;&gt; {ac.fullDescription} ({ac.category.name})
-                                </option>
-                              ))}
-                            </select>
+                            />
                           </div>
 
                           {/* Reason Input */}
@@ -350,11 +498,10 @@ export default function AdjustActivityPage() {
                               type="button"
                               onClick={() => handleAdjustRow(act.id)}
                               disabled={state.isSubmitting}
-                              className={`px-4 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-wider font-sans transition-all flex items-center gap-1 cursor-pointer ${
-                                state.activityCodeId === String(act.activityCodeId) && state.reason === (act.brRootCause || "")
+                              className={`px-4 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-wider font-sans transition-all flex items-center gap-1 cursor-pointer ${state.activityCodeId === String(act.activityCodeId) && state.reason === (act.brRootCause || "")
                                   ? "bg-[#161b22] text-[#8e8b94] border border-[#30363d] hover:bg-zinc-800"
                                   : "bg-[#5ebd56] hover:bg-[#53a74c] text-black font-extrabold shadow-lg shadow-[#5ebd56]/10"
-                              }`}
+                                }`}
                             >
                               {state.isSubmitting ? (
                                 <>
@@ -390,7 +537,7 @@ export default function AdjustActivityPage() {
               Peringatan Aturan Seri Pareto Telemetry:
             </span>
             <p className="text-[10px] text-zinc-400 font-sans leading-relaxed">
-              Apabila ketemu lebih dari 1 kategori yang sama dalam record data secara seri (berturut-turut pada timeline mesin), 
+              Apabila ketemu lebih dari 1 kategori yang sama dalam record data secara seri (berturut-turut pada timeline mesin),
               maka frekuensi henti pada grafik Pareto OEE secara otomatis **dihitung sebagai 1 kejadian**, dengan akumulasi total durasi menit yang dijumlahkan secara presisi.
             </p>
           </div>

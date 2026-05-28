@@ -12,14 +12,20 @@ if (!globalForMqtt.mqttClients) {
 
 const activeClients = globalForMqtt.mqttClients;
 
-// JSON Path dynamic extractor helper
+// JSON Path dynamic extractor helper supporting nested dot notation
 function getValueFromJson(jsonStr: string, path: string): any {
   try {
     const data = JSON.parse(jsonStr);
     if (!path || path === "$") return data;
     
     const cleanPath = path.replace(/^\$\./, "");
-    return data[cleanPath];
+    const parts = cleanPath.split(".");
+    let current = data;
+    for (const part of parts) {
+      if (current === null || current === undefined) return undefined;
+      current = current[part];
+    }
+    return current;
   } catch (err) {
     return jsonStr; // Fallback to raw payload string if JSON parsing fails
   }

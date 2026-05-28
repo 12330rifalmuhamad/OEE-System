@@ -17,6 +17,7 @@ import {
   AlertCircle,
   X,
   UserCheck,
+  Filter,
 } from "lucide-react";
 
 interface KpiTarget {
@@ -68,6 +69,11 @@ export default function DmsBoardPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Filters
+  const [filterType, setFilterType] = useState<"all" | "day" | "okp">("all");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedOkp, setSelectedOkp] = useState("");
+
   // Modals
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
@@ -85,7 +91,11 @@ export default function DmsBoardPage() {
   const [formTargetDate, setFormTargetDate] = useState("");
   const [formOkpLogId, setFormOkpLogId] = useState("");
 
-  const fetchData = async () => {
+  const fetchData = async (
+    type = filterType,
+    date = selectedDate,
+    okp = selectedOkp
+  ) => {
     setLoading(true);
     setError("");
     try {
@@ -100,8 +110,24 @@ export default function DmsBoardPage() {
         setTargetQual(targetData.kpiTarget.qualTarget.toString());
       }
 
-      // 2. Fetch OEE Actuals from analytics
-      const analyticsRes = await fetch("/api/analytics/oee");
+      // 2. Prepare filter params
+      let analyticsUrl = "/api/analytics/oee";
+      let dmsUrl = "/api/dms";
+      const params = [];
+      if (type === "day" && date) {
+        params.push(`date=${date}`);
+      } else if (type === "okp" && okp) {
+        params.push(`okp=${okp}`);
+      }
+
+      if (params.length > 0) {
+        const queryString = `?${params.join("&")}`;
+        analyticsUrl += queryString;
+        dmsUrl += queryString;
+      }
+
+      // 3. Fetch OEE Actuals from analytics
+      const analyticsRes = await fetch(analyticsUrl);
       if (analyticsRes.ok) {
         const analyticsData = await analyticsRes.json();
         setActuals({
@@ -112,14 +138,14 @@ export default function DmsBoardPage() {
         });
       }
 
-      // 3. Fetch DMS Actions
-      const dmsRes = await fetch("/api/dms");
+      // 4. Fetch DMS Actions
+      const dmsRes = await fetch(dmsUrl);
       if (dmsRes.ok) {
         const dmsData = await dmsRes.json();
         setDmsActions(dmsData.dmsActions);
       }
 
-      // 4. Fetch OKP Transactions for dropdown links
+      // 5. Fetch OKP Transactions for dropdown links
       const okpRes = await fetch("/api/transactions/okp");
       if (okpRes.ok) {
         const okpData = await okpRes.json();
@@ -140,8 +166,8 @@ export default function DmsBoardPage() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(filterType, selectedDate, selectedOkp);
+  }, [filterType, selectedDate, selectedOkp]);
 
   const handleUpdateTargets = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -317,6 +343,109 @@ export default function DmsBoardPage() {
         </div>
       </div>
 
+      {/* Sleek, Premium Filter Panel */}
+      <div className="flex flex-wrap items-center gap-3 bg-[#161224] border border-[#231b33] p-2 rounded-xl text-xs shadow-inner">
+        <span className="font-bold text-zinc-500 uppercase tracking-wider font-mono text-[9px] px-2 flex items-center gap-1.5">
+          <Filter className="w-3 h-3 text-[#8e72eb]" />
+          Filter Board:
+        </span>
+        
+        {/* Mode Selector Tabs */}
+        <div className="flex items-center bg-[#0b0911] border border-[#231b33] p-1 rounded-lg font-bold">
+          <button
+            onClick={() => {
+              setFilterType("all");
+              setSelectedDate("");
+              setSelectedOkp("");
+            }}
+            className={`px-3 py-1.5 rounded-md font-bold transition-all text-[10px] uppercase tracking-wider font-mono cursor-pointer ${
+              filterType === "all"
+                ? "bg-[#5b3fb8] text-white"
+                : "text-zinc-500 hover:text-zinc-355"
+            }`}
+          >
+            Semua
+          </button>
+          <button
+            onClick={() => {
+              setFilterType("day");
+              setSelectedOkp("");
+              if (!selectedDate) {
+                const today = new Date().toISOString().split("T")[0];
+                setSelectedDate(today);
+              }
+            }}
+            className={`px-3 py-1.5 rounded-md font-bold transition-all text-[10px] uppercase tracking-wider font-mono cursor-pointer ${
+              filterType === "day"
+                ? "bg-[#5b3fb8] text-white"
+                : "text-zinc-500 hover:text-zinc-355"
+            }`}
+          >
+            Per Hari
+          </button>
+          <button
+            onClick={() => {
+              setFilterType("okp");
+              setSelectedDate("");
+              if (!selectedOkp && okpOptions.length > 0) {
+                setSelectedOkp(okpOptions[0].okpNumber);
+              }
+            }}
+            className={`px-3 py-1.5 rounded-md font-bold transition-all text-[10px] uppercase tracking-wider font-mono cursor-pointer ${
+              filterType === "okp"
+                ? "bg-[#5b3fb8] text-white"
+                : "text-zinc-500 hover:text-zinc-355"
+            }`}
+          >
+            By OKP
+          </button>
+        </div>
+
+        {/* Dynamic Filter Input Field */}
+        {filterType === "day" && (
+          <div className="flex items-center gap-2 animate-fadeIn">
+            <Calendar className="w-4 h-4 text-[#8e72eb]" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-[#0b0911] border border-[#231b33] px-2.5 py-1.5 rounded-lg text-xs text-zinc-300 font-mono focus:outline-none focus:border-[#8e72eb] transition-colors"
+            />
+          </div>
+        )}
+
+        {filterType === "okp" && (
+          <div className="flex items-center gap-2 animate-fadeIn w-full sm:w-auto font-mono">
+            <Filter className="w-4 h-4 text-[#8e72eb]" />
+            <select
+              value={selectedOkp}
+              onChange={(e) => setSelectedOkp(e.target.value)}
+              className="bg-[#0b0911] border border-[#231b33] px-3 py-1.5 rounded-lg text-xs text-zinc-300 focus:outline-none focus:border-[#8e72eb] transition-colors cursor-pointer max-w-[200px]"
+            >
+              <option value="" disabled>Pilih OKP...</option>
+              {okpOptions.map((okp) => (
+                <option key={okp.id} value={okp.okpNumber} className="bg-[#161224] text-zinc-300">
+                  {okp.okpNumber}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Refresh/Reset Button */}
+        <button
+          onClick={() => {
+            setFilterType("all");
+            setSelectedDate("");
+            setSelectedOkp("");
+          }}
+          className="p-2 bg-[#0b0911] border border-[#231b33] text-zinc-500 hover:text-[#8e72eb] hover:border-[#8e72eb]/30 rounded-lg transition-all cursor-pointer flex items-center justify-center"
+          title="Reset Filters"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+        </button>
+      </div>
+
       {/* Notifications */}
       {success && (
         <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-lg text-xs font-semibold flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.05)]">
@@ -428,7 +557,7 @@ export default function DmsBoardPage() {
             </h3>
           </div>
           <button
-            onClick={fetchData}
+            onClick={() => fetchData()}
             className="p-1.5 bg-[#0b0911] hover:bg-[#1a1526] border border-[#231b33] rounded-lg text-zinc-450 hover:text-zinc-200 transition-colors cursor-pointer"
             title="Refresh List"
           >
