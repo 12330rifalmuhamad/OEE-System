@@ -15,6 +15,7 @@ async function main() {
   await prisma.user.deleteMany({});
   await prisma.activityCode.deleteMany({});
   await prisma.machine.deleteMany({});
+  await prisma.lineProcess.deleteMany({});
   await prisma.product.deleteMany({});
   await prisma.activityCategory.deleteMany({});
   await prisma.company.deleteMany({});
@@ -143,12 +144,26 @@ async function main() {
     }),
   };
 
-  // 5. SEED PRODUCTION MACHINES
-  console.log("🏭 Seeding Machines...");
+  // 5. SEED PRODUCTION LINES & MACHINES
+  console.log("🏭 Seeding Line Processes & Machines...");
+  const lineA4 = await prisma.lineProcess.create({
+    data: {
+      name: "Line A4",
+      companyId: company.id,
+    },
+  });
+
+  const lineB2 = await prisma.lineProcess.create({
+    data: {
+      name: "Line B2",
+      companyId: company.id,
+    },
+  });
+
   const machines = [
-    await prisma.machine.create({ data: { name: "Filling Line A4", companyId: company.id } }),
-    await prisma.machine.create({ data: { name: "Seaming Line A4", companyId: company.id } }),
-    await prisma.machine.create({ data: { name: "Cartooning Line A4", companyId: company.id } }),
+    await prisma.machine.create({ data: { name: "Filling Line A4", companyId: company.id, lineProcessId: lineA4.id } }),
+    await prisma.machine.create({ data: { name: "Seaming Line A4", companyId: company.id, lineProcessId: lineA4.id } }),
+    await prisma.machine.create({ data: { name: "Cartooning Line A4", companyId: company.id, lineProcessId: lineA4.id } }),
   ];
 
   // 6. SEED PRODUCTS & STANDARDS SPEED

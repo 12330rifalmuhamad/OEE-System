@@ -1,0 +1,78 @@
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+
+const authRoutes = require("./routes/authRoutes");
+const masterRoutes = require("./routes/masterRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
+const dmsRoutes = require("./routes/dmsRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
+const seedRoutes = require("./routes/seedRoutes");
+const { initMqttListeners } = require("./lib/mqttListener");
+
+const app = express();
+const PORT = process.env.PORT || 5001;
+
+// CORS configuration (allow frontend credentials to support cookie session transmission)
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000", 
+      "http://127.0.0.1:3000", 
+      "http://localhost:3001", 
+      "http://127.0.0.1:3001",
+      "http://localhost:3002",
+      "http://127.0.0.1:3002"
+    ],
+    credentials: true,
+  })
+);
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Root endpoint for simple health-check
+app.get("/", (req, res) => {
+  res.send(`
+    <div style="font-family: sans-serif; padding: 2rem; max-width: 600px; margin: auto;">
+      <h1 style="color: #2ea44f;">KMI OEE Backend Express.js Server</h1>
+      <p style="color: #586069;">Status: <strong>Active & Running</strong></p>
+      <p style="color: #586069;">Environment: <strong>${process.env.NODE_ENV || "development"}</strong></p>
+      <p style="color: #8c959f; font-size: 0.8rem; margin-top: 2rem;">© 2026 KMI OEE Enterprise. All telemetry listeners activated.</p>
+    </div>
+  `);
+});
+
+// Register API Routes (matching frontend endpoints)
+app.use("/api/auth", authRoutes);
+app.use("/api/master", masterRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/dms", dmsRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/seed", seedRoutes);
+
+// 404 Route handler
+app.use((req, res, next) => {
+  res.status(404).json({ error: "Endpoint tidak ditemukan." });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("Global Error Handler:", err);
+  res.status(500).json({ error: "Terjadi kesalahan internal server." });
+});
+
+// Launch Express Server
+app.listen(PORT, () => {
+  console.log(`==================================================`);
+  console.log(`🚀 KMI OEE Backend Server started on port ${PORT}`);
+  console.log(`👉 API Health Check at: http://localhost:${PORT}/`);
+  console.log(`==================================================`);
+
+  // Trigger MQTT background telemetry listeners on startup
+  initMqttListeners().catch((err) => {
+    console.error("[MQTT-BOOT] Failed to boot background telemetry listeners on startup:", err);
+  });
+});
