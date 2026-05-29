@@ -233,25 +233,25 @@ export default function OeeDashboardHome() {
   const c3 = 2 * Math.PI * r3;
 
   return (
-    <div className="flex-1 p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full relative z-10 bg-[#141318]">
+    <div className="flex-1 p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full relative z-10 bg-[var(--bg-base)] transition-colors duration-200">
 
       {/* 1. SCADA-STYLE HEADER & NAVIGATION TABS */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-[#26232b] pb-3">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-[var(--border-color)] pb-3">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-[#f4f3f6] tracking-wider uppercase font-mono flex items-center gap-2">
+            <h2 className="text-sm font-bold text-[var(--text-primary)] tracking-wider uppercase font-mono flex items-center gap-2">
               <TrendingUp className="w-4.5 h-4.5 text-[#5ebd56]" />
               <span>Telemetry Hub</span>
             </h2>
           </div>
 
           {/* Active Navigation Tabs from Screenshot */}
-          <div className="hidden md:flex items-center gap-6 text-xs font-semibold">
+          <div className="hidden md:flex items-center gap-6 text-xs font-semibold font-mono">
             <button
               onClick={() => setActiveTab("oee")}
               className={`pb-3 px-1 transition-all cursor-pointer font-bold border-b-2 ${activeTab === "oee"
-                ? "border-[#5ebd56] text-zinc-100"
-                : "border-transparent text-[#8e8b94] hover:text-zinc-200"
+                ? "border-[#5ebd56] text-[var(--text-primary)]"
+                : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 }`}
             >
               OEE & Downtime
@@ -259,15 +259,15 @@ export default function OeeDashboardHome() {
             <button
               onClick={() => setActiveTab("custom")}
               className={`pb-3 px-1 transition-all cursor-pointer font-bold border-b-2 ${activeTab === "custom"
-                ? "border-[#5ebd56] text-zinc-100"
-                : "border-transparent text-[#8e8b94] hover:text-zinc-200"
+                ? "border-[#5ebd56] text-[var(--text-primary)]"
+                : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 }`}
             >
               My Dashboard
             </button>
             <button
               onClick={() => setIsCustomizeModalOpen(true)}
-              className="text-[#8e8b94] pb-3 hover:text-[#5ebd56] transition-all font-bold text-sm px-1 cursor-pointer"
+              className="text-[var(--text-secondary)] pb-3 hover:text-[#5ebd56] transition-all font-bold text-sm px-1 cursor-pointer"
               title="Kustomisasi Dashboard"
             >
               +
@@ -276,9 +276,9 @@ export default function OeeDashboardHome() {
         </div>
 
         {/* Sleek, Premium Filter Panel */}
-        <div className="flex flex-wrap items-center gap-3 bg-[#1c1a21] border border-[#26232b] p-2 rounded-xl text-xs shadow-inner">
+        <div className="flex flex-wrap items-center gap-3 bg-[var(--bg-card)] border border-[var(--border-color)] p-2 rounded-xl text-xs shadow-[var(--card-shadow)]">
           {/* Mode Selector Tabs */}
-          <div className="flex items-center bg-[#121114] border border-[#26232b] p-1 rounded-lg">
+          <div className="flex items-center bg-[var(--bg-input)] border border-[var(--border-color)] p-1 rounded-lg">
             <button
               onClick={() => {
                 setFilterType("all");
@@ -287,7 +287,7 @@ export default function OeeDashboardHome() {
               }}
               className={`px-3 py-1.5 rounded-md font-bold transition-all text-[10px] uppercase tracking-wider font-mono cursor-pointer ${filterType === "all"
                 ? "bg-[#5ebd56] text-black"
-                : "text-[#8e8b94] hover:text-zinc-255"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 }`}
             >
               All
@@ -304,7 +304,7 @@ export default function OeeDashboardHome() {
               }}
               className={`px-3 py-1.5 rounded-md font-bold transition-all text-[10px] uppercase tracking-wider font-mono cursor-pointer ${filterType === "day"
                 ? "bg-[#5ebd56] text-black"
-                : "text-[#8e8b94] hover:text-zinc-255"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 }`}
             >
               By Day
@@ -320,7 +320,7 @@ export default function OeeDashboardHome() {
               }}
               className={`px-3 py-1.5 rounded-md font-bold transition-all text-[10px] uppercase tracking-wider font-mono cursor-pointer ${filterType === "okp"
                 ? "bg-[#5ebd56] text-black"
-                : "text-[#8e8b94] hover:text-zinc-255"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 }`}
             >
               By OKP
@@ -335,7 +335,7 @@ export default function OeeDashboardHome() {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-[#121114] border border-[#26232b] px-2.5 py-1.5 rounded-lg text-xs text-[#f4f3f6] font-mono focus:outline-none focus:border-[#5ebd56] transition-colors"
+                className="bg-[var(--bg-input)] border border-[var(--border-color)] px-2.5 py-1.5 rounded-lg text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-[#5ebd56] transition-colors"
               />
             </div>
           )}
@@ -346,11 +346,11 @@ export default function OeeDashboardHome() {
               <select
                 value={selectedOkp}
                 onChange={(e) => setSelectedOkp(e.target.value)}
-                className="bg-[#121114] border border-[#26232b] px-3 py-1.5 rounded-lg text-xs text-[#f4f3f6] font-mono focus:outline-none focus:border-[#5ebd56] transition-colors cursor-pointer max-w-[200px]"
+                className="bg-[var(--bg-input)] border border-[var(--border-color)] px-3 py-1.5 rounded-lg text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-[#5ebd56] transition-colors cursor-pointer max-w-[200px]"
               >
-                <option value="" disabled>Pilih OKP...</option>
+                <option value="" disabled className="bg-[var(--bg-card)] text-[var(--text-primary)]">Pilih OKP...</option>
                 {okpList.map((okp) => (
-                  <option key={okp.id} value={okp.okpNumber} className="bg-[#1c1a21] text-zinc-300">
+                  <option key={okp.id} value={okp.okpNumber} className="bg-[var(--bg-card)] text-[var(--text-primary)]">
                     {okp.okpNumber} ({okp.product.name.substring(0, 15)}...)
                   </option>
                 ))}
@@ -365,7 +365,7 @@ export default function OeeDashboardHome() {
               setSelectedDate("");
               setSelectedOkp("");
             }}
-            className="p-2 bg-[#121114] border border-[#26232b] text-[#8e8b94] hover:text-[#5ebd56] hover:border-[#5ebd56]/30 rounded-lg transition-all cursor-pointer flex items-center justify-center"
+            className="p-2 bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[#5ebd56] hover:border-[#5ebd56]/30 rounded-lg transition-all cursor-pointer flex items-center justify-center"
             title="Reset Filters"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
@@ -374,7 +374,7 @@ export default function OeeDashboardHome() {
       </div>
 
       {error && (
-        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3.5 rounded-lg text-xs font-semibold flex items-center gap-2">
+        <div className="bg-rose-550/10 border border-rose-500/20 text-rose-500 p-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 font-mono">
           <AlertTriangle className="w-4 h-4" />
           {error}
         </div>
@@ -386,34 +386,34 @@ export default function OeeDashboardHome() {
 
           {/* Concentric radial ring card (MATCHING SCREENSHOT PERFECTLY) */}
           {(activeTab === "oee" || customWidgets.oeeGauge) && (
-            <div className={`bg-[#1c1a21] border border-[#26232b] rounded-xl p-5 flex flex-col justify-between relative overflow-hidden shadow-lg ${isSingleGauge ? "min-h-[380px]" : "min-h-[280px]"}`}>
-              <div className="flex justify-between items-center border-b border-[#26232b] pb-2">
+            <div className={`bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-5 flex flex-col justify-between relative overflow-hidden shadow-[var(--card-shadow)] ${isSingleGauge ? "min-h-[380px]" : "min-h-[280px]"} transition-all`}>
+              <div className="flex justify-between items-center border-b border-[var(--border-color)] pb-2">
                 <div>
-                  <h3 className={`font-bold text-zinc-100 uppercase tracking-widest font-mono flex items-center gap-1.5 ${isSingleGauge ? "text-sm lg:text-base" : "text-xs"}`}>
-                    OEE <span className="text-[#8e8b94] font-normal lowercase">This shift</span>
+                  <h3 className={`font-bold text-[var(--text-primary)] uppercase tracking-widest font-mono flex items-center gap-1.5 ${isSingleGauge ? "text-sm lg:text-base" : "text-xs"}`}>
+                    OEE <span className="text-[var(--text-secondary)] font-normal lowercase">This shift</span>
                   </h3>
-                  <p className={`text-[#8e8b94] mt-0.5 font-mono ${isSingleGauge ? "text-xs" : "text-[10px]"}`}>FBF 1, FBF 2, FBF 3, FBF 4, FBF 5, FBF 6</p>
+                  <p className={`text-[var(--text-secondary)] mt-0.5 font-mono ${isSingleGauge ? "text-xs" : "text-[10px]"}`}>FBF 1, FBF 2, FBF 3, FBF 4, FBF 5, FBF 6</p>
                 </div>
-                <MoreHorizontal className="w-4 h-4 text-[#8e8b94] cursor-pointer" />
+                <MoreHorizontal className="w-4 h-4 text-[var(--text-secondary)] cursor-pointer" />
               </div>
 
               <div className={`flex flex-row items-center justify-around my-4 gap-4 ${isSingleGauge ? "py-6" : ""}`}>
                 {/* Left aligned values with +/- percentage indicators */}
                 <div className={`flex flex-col font-mono ${isSingleGauge ? "gap-6 scale-110 lg:scale-125 origin-left" : "gap-4"}`}>
                   <div className="flex flex-col">
-                    <span className={`text-[#8e8b94] uppercase tracking-wider ${isSingleGauge ? "text-[10px] lg:text-xs" : "text-[9px]"}`}>Availability</span>
+                    <span className={`text-[var(--text-secondary)] uppercase tracking-wider ${isSingleGauge ? "text-[10px] lg:text-xs" : "text-[9px]"}`}>Availability</span>
                     <span className={`font-extrabold text-[#5ebd56] ${isSingleGauge ? "text-3xl lg:text-4xl" : "text-base"}`}>{summary.availability}%</span>
-                    <span className={`text-rose-400 font-semibold ${isSingleGauge ? "text-xs lg:text-sm" : "text-[9px]"}`}>-18%</span>
+                    <span className={`text-rose-500 font-semibold ${isSingleGauge ? "text-xs lg:text-sm" : "text-[9px]"}`}>-18%</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className={`text-[#8e8b94] uppercase tracking-wider ${isSingleGauge ? "text-[10px] lg:text-xs" : "text-[9px]"}`}>Performance</span>
+                    <span className={`text-[var(--text-secondary)] uppercase tracking-wider ${isSingleGauge ? "text-[10px] lg:text-xs" : "text-[9px]"}`}>Performance</span>
                     <span className={`font-extrabold text-[#fed130] ${isSingleGauge ? "text-3xl lg:text-4xl" : "text-base"}`}>{summary.performance}%</span>
                     <span className={`text-[#5ebd56] font-semibold ${isSingleGauge ? "text-xs lg:text-sm" : "text-[9px]"}`}>+1%</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className={`text-[#8e8b94] uppercase tracking-wider ${isSingleGauge ? "text-[10px] lg:text-xs" : "text-[9px]"}`}>Quality</span>
+                    <span className={`text-[var(--text-secondary)] uppercase tracking-wider ${isSingleGauge ? "text-[10px] lg:text-xs" : "text-[9px]"}`}>Quality</span>
                     <span className={`font-extrabold text-[#f2a134] ${isSingleGauge ? "text-3xl lg:text-4xl" : "text-base"}`}>{summary.quality}%</span>
-                    <span className={`text-[#8e8b94] font-semibold ${isSingleGauge ? "text-xs lg:text-sm" : "text-[9px]"}`}>+0%</span>
+                    <span className={`text-[var(--text-secondary)] font-semibold ${isSingleGauge ? "text-xs lg:text-sm" : "text-[9px]"}`}>+0%</span>
                   </div>
                 </div>
 
@@ -421,7 +421,7 @@ export default function OeeDashboardHome() {
                 <div className={`relative ${isSingleGauge ? "w-56 h-56 lg:w-64 lg:h-64" : "w-40 h-40"} flex items-center justify-center`}>
                   <svg className="w-full h-full transform -rotate-90" viewBox={`0 0 ${isSingleGauge ? 256 : 160} ${isSingleGauge ? 256 : 160}`}>
                     {/* 1. Outer Ring: Availability */}
-                    <circle cx={cx} cy={cy} r={r1} className="stroke-[#2c2833]" strokeWidth={strokeW} fill="transparent" />
+                    <circle cx={cx} cy={cy} r={r1} stroke="var(--ring-bg)" strokeWidth={strokeW} fill="transparent" />
                     <circle
                       cx={cx}
                       cy={cy}
@@ -435,7 +435,7 @@ export default function OeeDashboardHome() {
                     />
 
                     {/* 2. Middle Ring: Performance */}
-                    <circle cx={cx} cy={cy} r={r2} className="stroke-[#2c2833]" strokeWidth={strokeW} fill="transparent" />
+                    <circle cx={cx} cy={cy} r={r2} stroke="var(--ring-bg)" strokeWidth={strokeW} fill="transparent" />
                     <circle
                       cx={cx}
                       cy={cy}
@@ -449,7 +449,7 @@ export default function OeeDashboardHome() {
                     />
 
                     {/* 3. Inner Ring: Quality */}
-                    <circle cx={cx} cy={cy} r={r3} className="stroke-[#2c2833]" strokeWidth={strokeW} fill="transparent" />
+                    <circle cx={cx} cy={cy} r={r3} stroke="var(--ring-bg)" strokeWidth={strokeW} fill="transparent" />
                     <circle
                       cx={cx}
                       cy={cy}
@@ -465,13 +465,13 @@ export default function OeeDashboardHome() {
 
                   {/* Centered OEE Text in nested circles */}
                   <div className="absolute flex flex-col items-center justify-center">
-                    <span className={`font-extrabold font-mono text-[#f4f3f6] tracking-tighter ${isSingleGauge ? "text-4xl lg:text-5xl" : "text-2xl"}`}>{summary.oee}%</span>
-                    <span className={`text-[#8e8b94] font-bold tracking-widest uppercase font-mono mt-0.5 ${isSingleGauge ? "text-[10px] lg:text-xs" : "text-[8px]"}`}>OEE</span>
+                    <span className={`font-extrabold font-mono text-[var(--text-primary)] tracking-tighter ${isSingleGauge ? "text-4xl lg:text-5xl" : "text-2xl"}`}>{summary.oee}%</span>
+                    <span className={`text-[var(--text-secondary)] font-bold tracking-widest uppercase font-mono mt-0.5 ${isSingleGauge ? "text-[10px] lg:text-xs" : "text-[8px]"}`}>OEE</span>
                   </div>
                 </div>
               </div>
 
-              <div className={`flex justify-between items-center text-[#8e8b94] border-t border-[#26232b] pt-2 ${isSingleGauge ? "text-xs py-2" : "text-[9px]"}`}>
+              <div className={`flex justify-between items-center text-[var(--text-secondary)] border-t border-[var(--border-color)] pt-2 ${isSingleGauge ? "text-xs py-2" : "text-[9px]"}`}>
                 <span>Overall capability: <span className="text-[#5ebd56] font-semibold">Operational</span></span>
                 <span>Target: <span className="text-[#5ebd56] font-semibold font-mono">85.0%</span></span>
               </div>
@@ -480,19 +480,19 @@ export default function OeeDashboardHome() {
 
           {/* Machine Capability Matrix (Right Side Card) */}
           {(activeTab === "oee" || customWidgets.machineMatrix) && (
-            <div className="bg-[#1c1a21] border border-[#26232b] rounded-xl p-5 shadow-lg min-h-[280px] flex flex-col justify-between">
-              <div className="flex justify-between items-center border-b border-[#26232b] pb-2">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-5 shadow-[var(--card-shadow)] min-h-[280px] flex flex-col justify-between transition-all">
+              <div className="flex justify-between items-center border-b border-[var(--border-color)] pb-2">
                 <div>
-                  <h3 className="text-xs font-bold text-zinc-100 uppercase tracking-widest font-mono">Line Machine Matrix</h3>
-                  <p className="text-[10px] text-[#8e8b94] mt-0.5 font-mono">Active plant capabilities.</p>
+                  <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-widest font-mono">Line Machine Matrix</h3>
+                  <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 font-mono">Active plant capabilities.</p>
                 </div>
-                <MoreHorizontal className="w-4 h-4 text-[#8e8b94] cursor-pointer" />
+                <MoreHorizontal className="w-4 h-4 text-[var(--text-secondary)] cursor-pointer" />
               </div>
 
               <div className="overflow-x-auto my-3 flex-1">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-[#26232b] text-[#8e8b94] font-semibold uppercase tracking-wider">
+                    <tr className="border-b border-[var(--border-color)] text-[var(--text-secondary)] font-semibold uppercase tracking-wider font-mono">
                       <th className="py-2">Line</th>
                       <th className="py-2 text-right font-mono">AR</th>
                       <th className="py-2 text-right font-mono">PR</th>
@@ -500,23 +500,23 @@ export default function OeeDashboardHome() {
                       <th className="py-2 text-right font-mono">OEE</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#26232b] text-zinc-300">
+                  <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-primary)]">
                     {loading ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-[#8e8b94] italic font-mono">
+                        <td colSpan={5} className="py-8 text-center text-[var(--text-secondary)] italic font-mono">
                           Fetching line parameters...
                         </td>
                       </tr>
                     ) : machines.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-[#8e8b94] italic font-mono">
+                        <td colSpan={5} className="py-8 text-center text-[var(--text-secondary)] italic font-mono">
                           No machinery registered.
                         </td>
                       </tr>
                     ) : (
                       machines.map((m) => (
-                        <tr key={m.id} className="hover:bg-[#232029]/20 transition-colors">
-                          <td className="py-2.5 font-semibold text-zinc-200 flex items-center gap-2 font-mono">
+                        <tr key={m.id} className="hover:bg-[var(--hover-bg)]/20 transition-colors">
+                          <td className="py-2.5 font-semibold text-[var(--text-primary)] flex items-center gap-2 font-mono">
                             <Cpu className="w-3.5 h-3.5 text-[#5ebd56]" />
                             {m.name}
                           </td>
@@ -539,9 +539,9 @@ export default function OeeDashboardHome() {
 
       {/* 3. SPREADSHEET FORMULA VALIDATION PANEL */}
       {(activeTab === "oee" || customWidgets.formulaValidation) && (
-        <div className="bg-[#1c1a21] border border-[#26232b] rounded-xl p-5 shadow-lg">
-          <div className="border-b border-[#26232b] pb-2 mb-4">
-            <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-widest font-mono flex items-center gap-2">
+        <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-5 shadow-[var(--card-shadow)] transition-all">
+          <div className="border-b border-[var(--border-color)] pb-2 mb-4">
+            <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-widest font-mono flex items-center gap-2">
               <Calculator className="w-4.5 h-4.5 text-[#5ebd56]" />
               <span>Master Formula Telemetry Validation</span>
             </h3>
@@ -549,40 +549,40 @@ export default function OeeDashboardHome() {
 
           {/* 6-Step Visual Timeline of Time Allocations */}
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4 font-mono">
-            <div className="bg-[#141318] border border-[#26232b] rounded-lg p-3">
-              <span className="text-[9px] font-bold text-[#8e8b94] uppercase tracking-wider">Loading Time</span>
-              <div className="text-sm font-bold text-zinc-200 mt-1">{summary.loadingTime} <span className="text-[10px] text-[#8e8b94]">min</span></div>
-              <p className="text-[9px] text-[#8e8b94] mt-1.5 leading-normal">Total Shift Time</p>
+            <div className="bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg p-3">
+              <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">Loading Time</span>
+              <div className="text-sm font-bold text-[var(--text-primary)] mt-1">{summary.loadingTime} <span className="text-[10px] text-[var(--text-secondary)]">min</span></div>
+              <p className="text-[9px] text-[var(--text-secondary)] mt-1.5 leading-normal">Total Shift Time</p>
             </div>
 
-            <div className="bg-[#141318] border border-[#26232b] rounded-lg p-3">
+            <div className="bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg p-3">
               <span className="text-[9px] font-bold text-[#5ebd56] uppercase tracking-wider">Operating Time</span>
-              <div className="text-sm font-bold text-[#5ebd56] mt-1">{summary.operatingTime} <span className="text-[10px] text-[#8e8b94]">min</span></div>
-              <p className="text-[9px] text-[#8e8b94] mt-1.5 leading-normal">Loading - Down - MI</p>
+              <div className="text-sm font-bold text-[#5ebd56] mt-1">{summary.operatingTime} <span className="text-[10px] text-[var(--text-secondary)]">min</span></div>
+              <p className="text-[9px] text-[var(--text-secondary)] mt-1.5 leading-normal">Loading - Down - MI</p>
             </div>
 
-            <div className="bg-[#141318] border border-[#26232b] rounded-lg p-3">
-              <span className="text-[9px] font-bold text-rose-400 uppercase tracking-wider">Performance Loss</span>
-              <div className="text-sm font-bold text-rose-400 mt-1">{summary.performanceLoss} <span className="text-[10px] text-[#8e8b94]">min</span></div>
-              <p className="text-[9px] text-[#8e8b94] mt-1.5 leading-normal">Cycle Deficit</p>
+            <div className="bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg p-3">
+              <span className="text-[9px] font-bold text-rose-450 uppercase tracking-wider">Performance Loss</span>
+              <div className="text-sm font-bold text-rose-500 mt-1">{summary.performanceLoss} <span className="text-[10px] text-[var(--text-secondary)]">min</span></div>
+              <p className="text-[9px] text-[var(--text-secondary)] mt-1.5 leading-normal">Cycle Deficit</p>
             </div>
 
-            <div className="bg-[#141318] border border-[#26232b] rounded-lg p-3">
-              <span className="text-[9px] font-bold text-zinc-200 uppercase tracking-wider">Net Operating</span>
-              <div className="text-sm font-bold text-zinc-200 mt-1">{summary.netOperatingTime} <span className="text-[10px] text-[#8e8b94]">min</span></div>
-              <p className="text-[9px] text-[#8e8b94] mt-1.5 leading-normal">Output / Std Speed</p>
+            <div className="bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg p-3">
+              <span className="text-[9px] font-bold text-[var(--text-primary)] uppercase tracking-wider">Net Operating</span>
+              <div className="text-sm font-bold text-[var(--text-primary)] mt-1">{summary.netOperatingTime} <span className="text-[10px] text-[var(--text-secondary)]">min</span></div>
+              <p className="text-[9px] text-[var(--text-secondary)] mt-1.5 leading-normal">Output / Std Speed</p>
             </div>
 
-            <div className="bg-[#141318] border border-[#26232b] rounded-lg p-3">
+            <div className="bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg p-3">
               <span className="text-[9px] font-bold text-[#fed130] uppercase tracking-wider">Defect Loss</span>
-              <div className="text-sm font-bold text-[#fed130] mt-1">{summary.defectLoss} <span className="text-[10px] text-[#8e8b94]">min</span></div>
-              <p className="text-[9px] text-[#8e8b94] mt-1.5 leading-normal">(Reject)/Speed</p>
+              <div className="text-sm font-bold text-[#fed130] mt-1">{summary.defectLoss} <span className="text-[10px] text-[var(--text-secondary)]">min</span></div>
+              <p className="text-[9px] text-[var(--text-secondary)] mt-1.5 leading-normal">(Reject)/Speed</p>
             </div>
 
-            <div className="bg-[#141318] border border-[#26232b] rounded-lg p-3">
+            <div className="bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg p-3">
               <span className="text-[9px] font-bold text-[#f2a134] uppercase tracking-wider">Valued Operating</span>
-              <div className="text-sm font-bold text-[#f2a134] mt-1">{summary.valuedOperatingTime} <span className="text-[10px] text-[#8e8b94]">min</span></div>
-              <p className="text-[9px] text-[#8e8b94] mt-1.5 leading-normal">Net - Defect Time</p>
+              <div className="text-sm font-bold text-[#f2a134] mt-1">{summary.valuedOperatingTime} <span className="text-[10px] text-[var(--text-secondary)]">min</span></div>
+              <p className="text-[9px] text-[var(--text-secondary)] mt-1.5 leading-normal">Net - Defect Time</p>
             </div>
           </div>
         </div>
@@ -594,40 +594,40 @@ export default function OeeDashboardHome() {
 
           {/* Pareto Downtime chart - 100% Matching Screenshot Colors and Arrows */}
           {(activeTab === "oee" || customWidgets.paretoDowntime) && (
-            <div className="bg-[#1c1a21] border border-[#26232b] rounded-xl p-5 shadow-lg flex flex-col justify-between min-h-[300px]">
-              <div className="flex justify-between items-center border-b border-[#26232b] pb-2">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-5 shadow-[var(--card-shadow)] flex flex-col justify-between min-h-[300px] transition-all">
+              <div className="flex justify-between items-center border-b border-[var(--border-color)] pb-2">
                 <div>
-                  <h3 className="text-xs font-bold text-zinc-100 uppercase tracking-widest font-mono">Downtime Pareto Chart (Lost Time)</h3>
-                  <p className="text-[10px] text-[#8e8b94] mt-0.5 font-mono">Total minutes categorized precisely by Pareto ranks.</p>
+                  <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-widest font-mono">Downtime Pareto Chart (Lost Time)</h3>
+                  <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 font-mono">Total minutes categorized precisely by Pareto ranks.</p>
                 </div>
-                <MoreHorizontal className="w-4 h-4 text-[#8e8b94] cursor-pointer" />
+                <MoreHorizontal className="w-4 h-4 text-[var(--text-secondary)] cursor-pointer" />
               </div>
 
               <div className="flex-1 flex flex-col gap-3.5 justify-center font-mono my-4">
                 {loading ? (
-                  <div className="flex-1 flex items-center justify-center text-[#8e8b94] text-xs italic">
+                  <div className="flex-1 flex items-center justify-center text-[var(--text-secondary)] text-xs italic">
                     Loading downtime logs...
                   </div>
                 ) : pareto.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center text-[#8e8b94] text-xs italic">
+                  <div className="flex-1 flex items-center justify-center text-[var(--text-secondary)] text-xs italic">
                     No recorded downtime.
                   </div>
                 ) : (
                   pareto.map((item, index) => {
                     const percentOfTotal = totalLostMinutes > 0 ? (item.minutes / totalLostMinutes) * 100 : 0;
                     return (
-                      <div key={item.code} className="flex flex-col gap-1">
+                      <div key={item.code} className="flex flex-col gap-1 font-mono">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="font-semibold text-zinc-200">
+                          <span className="font-semibold text-[var(--text-primary)]">
                             [{item.code.toUpperCase()}] {item.name}
                           </span>
-                          <span className="font-bold text-zinc-300">
-                            {item.minutes}m <span className="text-[10px] text-[#8e8b94] font-medium">({percentOfTotal.toFixed(1)}%)</span>
+                          <span className="font-bold text-[var(--text-primary)]">
+                            {item.minutes}m <span className="text-[10px] text-[var(--text-secondary)] font-medium">({percentOfTotal.toFixed(1)}%)</span>
                           </span>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-[#141318] h-3.5 rounded-md overflow-hidden border border-[#26232b]">
+                          <div className="flex-1 bg-[var(--bg-input)] h-3.5 rounded-md overflow-hidden border border-[var(--border-color)]">
                             <div
                               className={`bg-gradient-to-r ${getParetoBarColor(index)} h-full rounded-md transition-all duration-1000`}
                               style={{ width: `${percentOfTotal}%` }}
@@ -649,11 +649,11 @@ export default function OeeDashboardHome() {
 
           {/* OKP OEE Trend Analysis */}
           {(activeTab === "oee" || customWidgets.oeeTrend) && (
-            <div className="bg-[#1c1a21] border border-[#26232b] rounded-xl p-5 shadow-lg flex flex-col justify-between min-h-[300px]">
-              <div className="flex justify-between items-center border-b border-[#26232b] pb-2">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-5 shadow-[var(--card-shadow)] flex flex-col justify-between min-h-[300px] transition-all">
+              <div className="flex justify-between items-center border-b border-[var(--border-color)] pb-2">
                 <div>
-                  <h3 className="text-xs font-bold text-zinc-100 uppercase tracking-widest font-mono">OKP OEE Trend Logs</h3>
-                  <p className="text-[10px] text-[#8e8b94] mt-0.5 font-mono">Historical sequence of recent production runs.</p>
+                  <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-widest font-mono">OKP OEE Trend Logs</h3>
+                  <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 font-mono">Historical sequence of recent production runs.</p>
                 </div>
                 <Link
                   href="/dashboard/transactions"
@@ -665,11 +665,11 @@ export default function OeeDashboardHome() {
               </div>
 
               {/* Sequential horizontal timeline steps */}
-              <div className="flex items-center gap-4 overflow-x-auto py-6 pl-2 scrollbar-thin flex-1 my-auto">
+              <div className="flex items-center gap-4 overflow-x-auto py-6 pl-2 scrollbar-thin flex-1 my-auto font-mono">
                 {loading ? (
-                  <div className="text-[#8e8b94] text-xs italic font-mono">Mapping trend...</div>
+                  <div className="text-[var(--text-secondary)] text-xs italic font-mono">Mapping trend...</div>
                 ) : timeline.length === 0 ? (
-                  <div className="text-[#8e8b94] text-xs italic font-mono">No historical trend logs.</div>
+                  <div className="text-[var(--text-secondary)] text-xs italic font-mono">No historical trend logs.</div>
                 ) : (
                   timeline.map((item, idx) => (
                     <div key={idx} className="flex items-center flex-shrink-0 gap-3 group">
@@ -682,10 +682,10 @@ export default function OeeDashboardHome() {
                         >
                           {item.oee}%
                         </div>
-                        <span className="font-mono text-[9px] font-bold text-zinc-300 mt-1">{item.okpNumber}</span>
-                        <span className="text-[8px] text-[#8e8b94]">{item.date}</span>
+                        <span className="font-mono text-[9px] font-bold text-[var(--text-primary)] mt-1">{item.okpNumber}</span>
+                        <span className="text-[8px] text-[var(--text-secondary)]">{item.date}</span>
                       </div>
-                      {idx < timeline.length - 1 && <div className="w-8 h-[1px] bg-[#26232b]" />}
+                      {idx < timeline.length - 1 && <div className="w-8 h-[1px] bg-[var(--border-color)]" />}
                     </div>
                   ))
                 )}
@@ -697,12 +697,12 @@ export default function OeeDashboardHome() {
 
       {/* 5. CUSTOM DASHBOARD EMPTY STATE */}
       {activeTab === "custom" && Object.values(customWidgets).every((val) => !val) && (
-        <div className="bg-[#1c1a21] border border-dashed border-[#2c2833] rounded-xl p-12 flex flex-col items-center justify-center text-center max-w-md mx-auto my-8 shadow-md">
-          <div className="w-12 h-12 rounded-full bg-[#121114] border border-[#26232b] flex items-center justify-center text-[#5ebd56] text-xl font-extrabold mb-4 select-none">
+        <div className="bg-[var(--bg-card)] border border-dashed border-[var(--border-color)] rounded-xl p-12 flex flex-col items-center justify-center text-center max-w-md mx-auto my-8 shadow-md">
+          <div className="w-12 h-12 rounded-full bg-[var(--bg-input)] border border-[var(--border-color)] flex items-center justify-center text-[#5ebd56] text-xl font-extrabold mb-4 select-none">
             +
           </div>
-          <h3 className="text-xs font-bold text-zinc-200 font-mono uppercase tracking-wider">Dashboard Kustom Kosong</h3>
-          <p className="text-[10px] text-[#8e8b94] mt-2 leading-relaxed font-mono">
+          <h3 className="text-xs font-bold text-[var(--text-primary)] font-mono uppercase tracking-wider">Dashboard Kustom Kosong</h3>
+          <p className="text-[10px] text-[var(--text-secondary)] mt-2 leading-relaxed font-mono">
             Anda belum mengaktifkan widget apa pun di halaman "My Dashboard". Tekan tombol di bawah atau tombol "+" di atas untuk memilih metrik visualisasi pabrik Anda.
           </p>
           <button
@@ -716,29 +716,29 @@ export default function OeeDashboardHome() {
 
       {/* 6. MODAL: KUSTOMISASI DASHBOARD */}
       {isCustomizeModalOpen && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-[#1c1a21] border border-[#26232b] rounded-xl max-w-md w-full overflow-hidden shadow-2xl relative">
-            <div className="flex justify-between items-center p-4 border-b border-[#26232b] bg-[#121114]">
-              <h3 className="font-bold text-xs uppercase tracking-wider text-zinc-100 font-mono flex items-center gap-2">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl max-w-md w-full overflow-hidden shadow-2xl relative">
+            <div className="flex justify-between items-center p-4 border-b border-[var(--border-color)] bg-[var(--bg-input)]">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-[var(--text-primary)] font-mono flex items-center gap-2">
                 <Settings className="w-4 h-4 text-[#5ebd56]" />
                 Kustomisasi Widget Dashboard
               </h3>
               <button
                 onClick={() => setIsCustomizeModalOpen(false)}
-                className="p-1 hover:bg-zinc-800 rounded text-[#8e8b94] hover:text-zinc-200 transition-colors cursor-pointer"
+                className="p-1 hover:bg-zinc-800 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="p-5 space-y-4 text-xs font-mono">
-              <p className="text-[10px] text-[#8e8b94] leading-normal mb-2">
+              <p className="text-[10px] text-[var(--text-secondary)] leading-normal mb-2">
                 Pilih widget analitik yang ingin Anda tampilkan pada halaman tab <strong>"My Dashboard"</strong> Anda secara real-time.
               </p>
 
               <div className="space-y-3">
                 {/* Widget 1: OEE Gauge */}
-                <label className="flex items-start gap-3 p-3 bg-[#121114] border border-[#26232b] rounded-lg cursor-pointer hover:border-[#5ebd56]/30 transition-all select-none">
+                <label className="flex items-start gap-3 p-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg cursor-pointer hover:border-[#5ebd56]/30 transition-all select-none">
                   <input
                     type="checkbox"
                     checked={customWidgets.oeeGauge}
@@ -751,15 +751,15 @@ export default function OeeDashboardHome() {
                     className="mt-0.5 accent-[#5ebd56] cursor-pointer"
                   />
                   <div>
-                    <span className="font-bold text-zinc-200 block text-[10px] uppercase tracking-wider">Nested Concentric OEE Gauge</span>
-                    <span className="text-[9px] text-[#8e8b94] leading-normal block mt-1">
+                    <span className="font-bold text-[var(--text-primary)] block text-[10px] uppercase tracking-wider">Concentric OEE Gauge</span>
+                    <span className="text-[9px] text-[var(--text-secondary)] leading-normal block mt-1">
                       Grafik lingkaran berlapis untuk Availability, Performance, dan Quality.
                     </span>
                   </div>
                 </label>
 
                 {/* Widget 2: Line Machine Matrix */}
-                <label className="flex items-start gap-3 p-3 bg-[#121114] border border-[#26232b] rounded-lg cursor-pointer hover:border-[#5ebd56]/30 transition-all select-none">
+                <label className="flex items-start gap-3 p-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg cursor-pointer hover:border-[#5ebd56]/30 transition-all select-none">
                   <input
                     type="checkbox"
                     checked={customWidgets.machineMatrix}
@@ -772,15 +772,15 @@ export default function OeeDashboardHome() {
                     className="mt-0.5 accent-[#5ebd56] cursor-pointer"
                   />
                   <div>
-                    <span className="font-bold text-zinc-200 block text-[10px] uppercase tracking-wider">Line Machine Matrix</span>
-                    <span className="text-[9px] text-[#8e8b94] leading-normal block mt-1">
+                    <span className="font-bold text-[var(--text-primary)] block text-[10px] uppercase tracking-wider">Line Machine Matrix</span>
+                    <span className="text-[9px] text-[var(--text-secondary)] leading-normal block mt-1">
                       Tabel kinerja real-time yang memuat data OEE untuk setiap mesin pabrik.
                     </span>
                   </div>
                 </label>
 
                 {/* Widget 3: Telemetry Validation */}
-                <label className="flex items-start gap-3 p-3 bg-[#121114] border border-[#26232b] rounded-lg cursor-pointer hover:border-[#5ebd56]/30 transition-all select-none">
+                <label className="flex items-start gap-3 p-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg cursor-pointer hover:border-[#5ebd56]/30 transition-all select-none">
                   <input
                     type="checkbox"
                     checked={customWidgets.formulaValidation}
@@ -793,15 +793,15 @@ export default function OeeDashboardHome() {
                     className="mt-0.5 accent-[#5ebd56] cursor-pointer"
                   />
                   <div>
-                    <span className="font-bold text-zinc-200 block text-[10px] uppercase tracking-wider">Formula Telemetry Validation</span>
-                    <span className="text-[9px] text-[#8e8b94] leading-normal block mt-1">
+                    <span className="font-bold text-[var(--text-primary)] block text-[10px] uppercase tracking-wider">Formula Telemetry Validation</span>
+                    <span className="text-[9px] text-[var(--text-secondary)] leading-normal block mt-1">
                       Detail alokasi waktu operasional (Loading, Operating, Net Operating, Defect, dll).
                     </span>
                   </div>
                 </label>
 
                 {/* Widget 4: Pareto lost time */}
-                <label className="flex items-start gap-3 p-3 bg-[#121114] border border-[#26232b] rounded-lg cursor-pointer hover:border-[#5ebd56]/30 transition-all select-none">
+                <label className="flex items-start gap-3 p-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg cursor-pointer hover:border-[#5ebd56]/30 transition-all select-none">
                   <input
                     type="checkbox"
                     checked={customWidgets.paretoDowntime}
@@ -814,15 +814,15 @@ export default function OeeDashboardHome() {
                     className="mt-0.5 accent-[#5ebd56] cursor-pointer"
                   />
                   <div>
-                    <span className="font-bold text-zinc-200 block text-[10px] uppercase tracking-wider">Downtime Pareto Chart</span>
-                    <span className="text-[9px] text-[#8e8b94] leading-normal block mt-1">
+                    <span className="font-bold text-[var(--text-primary)] block text-[10px] uppercase tracking-wider">Downtime Pareto Chart</span>
+                    <span className="text-[9px] text-[var(--text-secondary)] leading-normal block mt-1">
                       Visualisasi peringkat losses downtime terbesar di lantai pabrik.
                     </span>
                   </div>
                 </label>
 
                 {/* Widget 5: OEE Trend */}
-                <label className="flex items-start gap-3 p-3 bg-[#121114] border border-[#26232b] rounded-lg cursor-pointer hover:border-[#5ebd56]/30 transition-all select-none">
+                <label className="flex items-start gap-3 p-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg cursor-pointer hover:border-[#5ebd56]/30 transition-all select-none">
                   <input
                     type="checkbox"
                     checked={customWidgets.oeeTrend}
@@ -835,15 +835,15 @@ export default function OeeDashboardHome() {
                     className="mt-0.5 accent-[#5ebd56] cursor-pointer"
                   />
                   <div>
-                    <span className="font-bold text-zinc-200 block text-[10px] uppercase tracking-wider">OKP OEE Trend Logs</span>
-                    <span className="text-[9px] text-[#8e8b94] leading-normal block mt-1">
+                    <span className="font-bold text-[var(--text-primary)] block text-[10px] uppercase tracking-wider">OKP OEE Trend Logs</span>
+                    <span className="text-[9px] text-[var(--text-secondary)] leading-normal block mt-1">
                       Grafik tren historikal hasil OEE dari run produksi OKP sebelumnya.
                     </span>
                   </div>
                 </label>
               </div>
 
-              <div className="flex justify-end gap-3 border-t border-[#26232b] pt-4 mt-4">
+              <div className="flex justify-end gap-3 border-t border-[var(--border-color)] pt-4 mt-4 bg-[var(--bg-card)]">
                 <button
                   type="button"
                   onClick={() => setIsCustomizeModalOpen(false)}
@@ -859,3 +859,4 @@ export default function OeeDashboardHome() {
     </div>
   );
 }
+

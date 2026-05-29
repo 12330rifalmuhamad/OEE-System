@@ -281,7 +281,7 @@ export default function CreateOKPLogPage() {
       return;
     }
 
-    const selectedCode = activityCodes.find((ac) => ac.id === parseInt(selectedActCodeId, 10));
+    const selectedCode = activityCodes.find((ac) => ac.id === selectedActCodeId);
     if (!selectedCode) return;
 
     const durationVal = parseFloat(actDuration);
@@ -473,7 +473,7 @@ export default function CreateOKPLogPage() {
   };
 
   // Live Performance Estimation Helper for Step 4
-  const activeProductObj = products.find((p) => p.id === parseInt(productId, 10));
+  const activeProductObj = products.find((p) => p.id === productId);
   const estimatedPerformanceRate = () => {
     if (!activeProductObj || !totalOutput || !loadingTime) return null;
     const stdSpeed = activeProductObj.standarSpeed;
@@ -625,7 +625,7 @@ export default function CreateOKPLogPage() {
                   <option value="">-- Pilih Produk --</option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} {p.size ? `(${p.size})` : ""}
+                      {p.name} {p.productCode ? `(${p.productCode})` : ""}
                     </option>
                   ))}
                 </select>

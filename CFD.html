@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KMI - CFD Simulation Platform</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* =========================
+           PT Kalbe Morinaga Indonesia THEME & VARIABLES
+           ========================= */
+        :root {
+            --primary-brand: #008F4C; 
+            --primary-hover: #00703A; 
+            --accent-brand: #F26522;  
+            --text-brand: #008F4C;    
+            
+            --bg-base: #f0fdf4; 
+            --bg-surface: #FFFFFF;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #d1d5db;
+            --header-bg: rgba(255, 255, 255, 0.95);
+            --table-header-bg: #f0fdf4;
+            --input-bg: #f9fafb;
+            --hover-bg: rgba(0, 143, 76, 0.08); 
+            --active-bg: rgba(0, 143, 76, 0.12);
+            
+            --shadow-sm: 0 2px 4px rgba(0,143,76,0.05);
+            --shadow-md: 0 4px 10px rgba(0,143,76,0.1);
+            --shadow-lg: 0 10px 25px rgba(0,143,76,0.15);
+        }
+
+        [data-theme="dark"] {
+            --bg-base: #064e3b; 
+            --bg-surface: #022c22;
+            --text-main: #f3f4f6;
+            --text-muted: #a7f3d0;
+            --border-color: #047857;
+            --header-bg: rgba(2, 44, 34, 0.95);
+            --table-header-bg: #064e3b;
+            --input-bg: #064e3b;
+            --hover-bg: rgba(167, 243, 208, 0.1);
+            --active-bg: rgba(167, 243, 208, 0.2);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.5);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.6);
+        }
+
+        .text-primary { color: var(--primary-brand) !important; }
+        .bg-primary { background-color: var(--primary-brand) !important; color: white !important;}
+        .text-success-custom { color: #10B981 !important; }
+        .bg-success-custom { background-color: #10B981; color: white;}
+        .text-warning-custom { color: #F59E0B !important; }
+        
+        .btn { border-radius: 8px; font-weight: 600; transition: all 0.25s ease; letter-spacing: 0.3px;}
+        .btn-primary { background-color: var(--primary-brand); border-color: var(--primary-brand); color: white;}
+        .btn-primary:hover { background-color: var(--primary-hover); border-color: var(--primary-hover); color: white; transform: translateY(-1px); box-shadow: var(--shadow-md);}
+        
+        body { 
+            font-family: 'Nunito Sans', 'Segoe UI', system-ui, sans-serif; 
+            margin: 0; 
+            height: 100vh; 
+            overflow: hidden; 
+            background-color: var(--bg-base); 
+            color: var(--text-main); 
+            font-size: 0.9rem; 
+            display: flex; 
+            transition: background-color 0.3s, color 0.3s; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        /* =========================
+           LOGIN SCREEN
+           ========================= */
+        #login-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; z-index: 9999; background: var(--bg-surface); 
+            transition: opacity 0.5s ease; 
+        }
+        .login-left { 
+            flex: 1; display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; padding: 40px; background: var(--bg-surface); z-index: 2;
+        }
+        .login-right { 
+            flex: 1.2; background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-brand) 100%); 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            padding: 60px; overflow: hidden; position: relative; 
+        }
+        .login-left .input-group-text { background-color: transparent; border: 1px solid var(--border-color); border-right: none;}
+        .login-left .form-control { background-color: var(--input-bg); border: 1px solid var(--border-color); border-left: none; box-shadow: none; transition: 0.2s; padding-left: 0;}
+        .login-left .form-control:focus { border-color: var(--border-color); }
+        .login-left .input-group:focus-within { border-bottom: 2px solid var(--primary-brand); }
+        
+        .futuristic-glass-panel { 
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); 
+            border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 15px 35px rgba(0,0,0,0.2); 
+            border-radius: 16px; padding: 50px; z-index: 5; color: white;
+            animation: floatUpDown 5s ease-in-out infinite alternate;
+        }
+        @keyframes floatUpDown { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
+        
+        /* Tech rings on login */
+        .tech-ring { position: absolute; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 50%; z-index: 1; animation: pulseRing 4s infinite cubic-bezier(0.21, 0.53, 0.56, 0.8); }
+        .ring-1 { width: 300px; height: 300px; animation-delay: 0s; } 
+        .ring-2 { width: 500px; height: 500px; animation-delay: 1.5s; } 
+        .ring-3 { width: 700px; height: 700px; animation-delay: 3s; }
+        @keyframes pulseRing { 0% { transform: scale(0.5); opacity: 0; } 50% { opacity: 1; } 100% { transform: scale(1.5); opacity: 0; border-width: 3px; } }
+
+        /* =========================
+           MAIN APP & SIDEBAR
+           ========================= */
+        #main-app { display: none; width: 100vw; height: 100vh; flex-direction: row; gap: 8px; background: var(--bg-base); padding: 8px; }
+
+        #primary-sidebar { width: 80px; background: var(--primary-brand); display: flex; flex-direction: column; padding-top: 20px; z-index: 100; flex-shrink: 0; overflow-y: auto; overflow-x: hidden; transition: 0.3s; border-radius: 16px; box-shadow: var(--shadow-md); border: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-brand { color: #ffffff; text-align: center; font-size: 1.8rem; margin-bottom: 25px; font-weight: bold;}
+        
+        .module-icon { width: 100%; padding: 16px 0; text-align: center; color: rgba(255,255,255,0.7); cursor: pointer; transition: all 0.2s ease; position: relative; border-left: 4px solid transparent; }
+        .module-icon:hover { color: #ffffff; background-color: rgba(255,255,255,0.15);}
+        .module-icon.active { background-color: var(--bg-surface); color: var(--primary-brand); border-left: 4px solid var(--accent-brand); border-radius: 12px 0 0 12px; margin-left: 4px; width: calc(100% - 4px);}
+        .module-icon i { font-size: 1.4rem; }
+        
+        .module-icon.logout-btn { border-left: none; margin-top: auto; margin-bottom: 10px; color: #fca5a5;}
+        .module-icon.logout-btn:hover { background-color: rgba(239, 68, 68, 0.2); color: #f87171;}
+
+        @keyframes slideTooltip { from { opacity: 0; transform: translate(-10px, -50%); } to { opacity: 1; transform: translate(0, -50%); } }
+        .module-icon span { display: none; position: absolute; left: 85px; top: 50%; transform: translateY(-50%); background: var(--bg-surface); color: var(--text-main); padding: 8px 14px; border-radius: 8px; white-space: nowrap; z-index: 1000; font-size: 0.9rem; font-weight: 700; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); }
+        .module-icon:hover span { display: block; animation: slideTooltip 0.2s forwards; }
+
+        /* =========================
+           MAIN WORKSPACE & HEADER
+           ========================= */
+        #workspace { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; background-color: var(--bg-surface); width: 100%; position: relative; border-radius: 16px; box-shadow: var(--shadow-sm);}
+        
+        .futuristic-header { padding: 16px 30px; background: var(--header-bg); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 50; transition: 0.3s; border-radius: 16px 16px 0 0; }
+        
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .theme-toggle { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; box-shadow: var(--shadow-sm);}
+        .theme-toggle:hover { background: var(--hover-bg); border-color: var(--primary-brand); color: var(--primary-brand); transform: scale(1.05);}
+        
+        .user-chip { display: flex; align-items: center; gap: 12px; cursor: pointer; border-left: 1px solid var(--border-color); padding-left: 20px;}
+        .user-info { display: flex; flex-direction: column; text-align: right; line-height: 1.2;}
+        .user-avatar { width: 36px; height: 36px; background: var(--accent-brand); color: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.85rem; font-weight: bold; box-shadow: 0 2px 5px rgba(242, 101, 34, 0.4);}
+
+        /* GLOBAL TECH BACKGROUND (Workspace) */
+        .tech-bg {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 143, 76, 0.04) 0%, rgba(242, 101, 34, 0.04) 100%);
+            overflow: hidden; z-index: 0; border-radius: 16px; pointer-events: none;
+        }
+        .tech-grid {
+            position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
+            background-image: linear-gradient(var(--border-color) 1px, transparent 1px), linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+            background-size: 60px 60px; opacity: 0.4; transform: rotateX(60deg) rotateZ(45deg); animation: moveGrid 20s linear infinite;
+        }
+        [data-theme="dark"] .tech-grid { opacity: 0.1; }
+
+        /* MODULE CONTENTS */
+        .module-content { flex-grow: 1; display: none; flex-direction: column; overflow-y: auto; overflow-x: hidden; padding: 30px; position: relative; z-index: 1;} 
+        .module-content.active { display: flex; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .card-custom { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: var(--shadow-sm); margin-bottom: 20px; flex-shrink: 0; transition: 0.2s; position: relative; z-index: 2;}
+        .card-custom:hover { box-shadow: var(--shadow-md); border-color: rgba(0, 143, 76, 0.3);}
+        
+        /* FORM Overrides */
+        .form-control:not(#login-user):not(#login-pass), .form-select { background-color: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 15px;}
+        .form-control:focus, .form-select:focus { border-color: var(--primary-brand); box-shadow: 0 0 0 3px rgba(0, 143, 76, 0.15); background-color: var(--bg-surface); }
+        .input-group-text:not(.login-icon) { background-color: var(--table-header-bg); font-weight: 700; color: var(--primary-brand); font-size: 0.85rem; border-left: none;}
+        .form-label { font-weight: 700; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;}
+
+        /* CMS Tabs */
+        .cms-tabs { border-bottom: 2px solid var(--border-color); margin-bottom: 25px; flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; padding-bottom: 5px;}
+        .cms-tabs::-webkit-scrollbar { height: 4px; }
+        .cms-tabs::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px;}
+        .cms-tabs .nav-link { color: var(--text-muted); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; padding: 12px 20px; border: none; border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0; letter-spacing: 0.5px; cursor: pointer; transition: 0.2s;}
+        .cms-tabs .nav-link:hover { color: var(--primary-brand); background: var(--hover-bg); }
+        .cms-tabs .nav-link.active { color: var(--primary-brand); border-bottom: 3px solid var(--accent-brand); background: var(--active-bg); }
+
+        /* Accordion Custom Styling */
+        .accordion-custom .accordion-button { background-color: var(--bg-surface); color: var(--primary-brand); font-weight: 800; box-shadow: none; border-bottom: 1px solid var(--border-color); padding: 18px 25px; font-size: 1rem;}
+        .accordion-custom .accordion-button::after { filter: brightness(0) saturate(100%) invert(35%) sepia(87%) saturate(1039%) hue-rotate(125deg) brightness(92%) contrast(101%); }
+        .accordion-custom .accordion-button:not(.collapsed) { background-color: var(--active-bg); color: var(--primary-brand); box-shadow: none; }
+        .accordion-custom .accordion-item { border: 1px solid var(--border-color); border-radius: 12px !important; overflow: hidden; margin-bottom: 20px; background: var(--bg-surface); box-shadow: var(--shadow-sm);}
+        .accordion-custom .accordion-body { padding: 25px; background-color: var(--bg-surface); }
+
+        /* Terminal & Visuals */
+        .processor-visuals { display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); gap: 12px; background: var(--table-header-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); align-content: start; }
+        .core-box { background-color: var(--primary-brand); border-radius: 8px; aspect-ratio: 1; transition: all 0.3s ease; box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 2px 4px rgba(0,143,76,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem;}
+        .core-box.inactive { background-color: var(--border-color); box-shadow: none; opacity: 0.3; color: transparent;}
+        .form-range::-webkit-slider-thumb { background: var(--primary-brand); box-shadow: 0 0 0 1px white, 0 2px 5px rgba(0,0,0,0.2);}
+        .form-range::-webkit-slider-thumb:active { background: var(--primary-hover); }
+        .terminal { background-color: #111827; color: #34d399; padding: 20px; border-radius: 12px; font-family: 'Fira Code', 'Courier New', Courier, monospace; font-size: 0.85rem; min-height: 250px; box-shadow: inset 0 4px 6px rgba(0,0,0,0.5); overflow-y: auto; border: 1px solid #374151;}
+
+        /* DASHBOARD ELEMENTS */
+        .dashboard-wrapper { position: relative; z-index: 1; height: auto; display: flex; flex-direction: column; }
+        
+        .workflow-stepper {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            background: var(--bg-surface); padding: 30px; border-radius: 16px;
+            box-shadow: var(--shadow-md); border: 1px solid var(--border-color);
+            margin-bottom: 25px; position: relative; flex-shrink: 0; overflow-x: auto;
+        }
+        .wf-node {
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; z-index: 2; min-width: 110px; flex-shrink: 0;
+        }
+        .wf-icon {
+            width: 65px; height: 65px; background: var(--input-bg);
+            border: 3px solid var(--border-color); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem; color: var(--text-muted); transition: all 0.3s ease; box-shadow: var(--shadow-sm);
+        }
+        .wf-label {
+            font-weight: 800; font-size: 0.8rem; color: var(--text-main);
+            text-align: center; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.3s; line-height: 1.3;
+        }
+        .wf-node:hover .wf-icon { border-color: var(--primary-brand); background: var(--primary-brand); color: white; transform: scale(1.1); box-shadow: 0 0 15px rgba(0, 143, 76, 0.4); }
+        .wf-node:hover .wf-label { color: var(--primary-brand); }
+        .wf-node.result-node:hover .wf-icon { border-color: var(--accent-brand); background: var(--accent-brand); box-shadow: 0 0 15px rgba(242, 101, 34, 0.4); }
+        .wf-node.result-node:hover .wf-label { color: var(--accent-brand); }
+
+        .wf-line {
+            flex-grow: 1; height: 4px; background: var(--border-color);
+            position: relative; z-index: 1; margin: 30px -15px 0 -15px; 
+            border-radius: 2px; min-width: 25px; flex-shrink: 0;
+        }
+        .wf-line::after {
+            content: '▶'; position: absolute; right: -5px; top: 50%;
+            transform: translateY(-50%); color: var(--border-color); font-size: 0.7rem;
+        }
+
+        .stat-card-icon {
+            width: 50px; height: 50px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; color: white; box-shadow: var(--shadow-sm); flex-shrink: 0;
+        }
+
+        /* MOBILE RESPONSIVE */
+        @media (max-width: 768px) {
+            #main-app { flex-direction: column; padding: 0; }
+            #primary-sidebar { 
+                order: 2; width: 100%; height: 70px; flex-direction: row; padding: 0; 
+                border-radius: 16px 16px 0 0; overflow-x: auto; overflow-y: hidden;
+                box-shadow: 0 -4px 10px rgba(0,0,0,0.1); justify-content: space-around; align-items: center;
+            }
+            .sidebar-brand, .logout-btn { display: none !important; }
+            .module-icon { 
+                padding: 10px; border-left: none; border-top: 4px solid transparent; 
+                flex: 1; min-width: 60px; display: flex; justify-content: center;
+                align-items: center; border-radius: 0; margin: 0;
+            }
+            .module-icon.active { border-left: none; border-radius: 0; border-top: 4px solid var(--accent-brand); background-color: rgba(255,255,255,0.1); color: #ffffff;}
+            .module-icon span { display: none !important; }
+            
+            #workspace { order: 1; border-radius: 0; box-shadow: none; height: calc(100vh - 70px);}
+            .futuristic-header { padding: 12px 16px; border-radius: 0; }
+            .module-content { padding: 16px; }
+            
+            .card-custom { padding: 15px; margin-bottom: 15px;}
+            .page-title { font-size: 1rem !important; }
+            .user-info { display: none; }
+            
+            .workflow-stepper { flex-direction: column; gap: 10px; padding: 20px; align-items: center;}
+            .wf-node { width: 100%; min-width: unset; }
+            .wf-line { width: 4px; height: 25px; min-width: 4px; min-height: 25px; margin: 0;}
+            .wf-line::after { content: '▼'; bottom: -8px; top: auto; right: 50%; transform: translateX(50%);}
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-left">
+            <div class="w-100" style="max-width: 400px;">
+                
+                <div class="text-center mb-5">
+                    <div style="display:inline-block; background: var(--bg-base); padding: 15px; border-radius: 50%; box-shadow: var(--shadow-sm); margin-bottom: 10px;">
+                        <i class="bi bi-heart-pulse-fill" style="font-size: 3rem; color: var(--primary-brand);"></i>
+                    </div>
+                    <h3 class="fw-bold text-main mb-1" style="letter-spacing: -0.5px;">CFD Simulation</h3>
+                    <p class="text-muted small fw-bold" style="letter-spacing: 1px; text-transform: uppercase;">CFD WORKSPACE CONSOLE</p>
+                </div>
+
+                <form onsubmit="handleLogin(event)">
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">EMAIL / USERNAME</label>
+                        <div class="input-group shadow-sm" style="border-radius: 6px; overflow: hidden;">
+                            <span class="input-group-text login-icon"><i class="bi bi-person text-muted"></i></span>
+                            <input type="text" class="form-control" id="login-user" placeholder="kmi.cfd" required>
+                        </div>
+                    </div>
+                    <div class="mb-5">
+                        <label class="form-label text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 1px;">PASSWORD</label>
+                        <div class="input-group shadow-sm" style="border-radius: 6px; overflow: hidden;">
+                            <span class="input-group-text login-icon"><i class="bi bi-key text-muted"></i></span>
+                            <input type="password" class="form-control border-end-0" id="login-pass" placeholder="kmi.cfd" required>
+                            <span class="input-group-text login-icon border-start-0 cursor-pointer text-muted bg-white"><i class="bi bi-eye"></i></span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-3 shadow-sm fw-bold fs-6">
+                        SECURE LOGIN <i class="bi bi-arrow-right ms-2"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="login-right d-none d-lg-flex">
+            <div class="tech-grid"></div>
+            <div class="tech-ring ring-1"></div>
+            <div class="tech-ring ring-2"></div>
+            <div class="tech-ring ring-3"></div>
+            <div class="futuristic-glass-panel text-center" style="max-width: 550px;">
+                <h1 class="mb-4 fw-bold" style="font-size: 3rem; line-height: 1.2;">CFD <span style="font-weight: normal; color: var(--accent-brand);">Simulation</span></h1>
+                <p class="mb-4 fw-medium" style="font-size: 1.1rem; opacity: 0.95;">
+                    Centralized Computational Fluid Dynamics Platform. Model, Mesh, Solve, and Visualize your processing capabilities seamlessly.
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="main-app">
+        <div id="primary-sidebar">
+            <div class="sidebar-brand" title="Kalbe Simulation"><i class="bi bi-heart-pulse-fill text-white"></i></div>
+            
+            <div class="module-icon active" onclick="nav('dashboard', 'Dashboard Workspace', 'bi-speedometer2')" title="Dashboard">
+                <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+            </div>
+            <div class="module-icon" onclick="nav('input-parameter', 'Input Parameters', 'bi-sliders2')" title="Input Parameters">
+                <i class="bi bi-sliders2"></i><span>Input Parameters</span>
+            </div>
+            <div class="module-icon" onclick="nav('set-processor', 'Processor Setup', 'bi-cpu')" title="Processor Setup">
+                <i class="bi bi-cpu"></i><span>Processor Setup</span>
+            </div>
+            <div class="module-icon" onclick="nav('meshing', 'Meshing Process', 'bi-bounding-box')" title="Meshing">
+                <i class="bi bi-bounding-box"></i><span>Meshing</span>
+            </div>
+            <div class="module-icon" onclick="nav('solver', 'Solver Execution', 'bi-play-circle-fill')" title="Solver">
+                <i class="bi bi-play-circle-fill"></i><span>Solver</span>
+            </div>
+            <div class="module-icon" onclick="nav('paraview', 'Paraview Render', 'bi-display')" title="Paraview">
+                <i class="bi bi-display"></i><span>Paraview</span>
+            </div>
+            <div class="module-icon" onclick="nav('graph', 'History Graph', 'bi-graph-up-arrow')" title="Graph">
+                <i class="bi bi-graph-up-arrow"></i><span>Graph</span>
+            </div>
+            <div class="module-icon" onclick="nav('report', 'Simulation Report', 'bi-clipboard-data')" title="Report">
+                <i class="bi bi-clipboard-data"></i><span>Report</span>
+            </div>
+
+            <div style="flex-grow: 1;"></div>
+            <div class="module-icon logout-btn" onclick="handleLogout()" title="Logout">
+                <i class="bi bi-box-arrow-left"></i><span>Logout</span>
+            </div>
+        </div>
+
+        <div id="workspace">
+            <header class="futuristic-header">
+                <div class="d-flex align-items-center flex-grow-1">
+                    <div>
+                        <div class="text-muted" style="font-size: 0.65rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-left: 10px; margin-bottom: 2px;">PT Kalbe Morinaga Indonesia | CFD</div>
+                        <h5 class="page-title text-main" id="page-title" style="margin-left: 10px; font-size: 1.25rem; margin-top: 0; font-weight: 800;">
+                            <i class="bi bi-speedometer2 text-primary"></i> <span style="margin-left:5px;">Dashboard Workspace</span>
+                        </h5>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-outline-danger btn-sm shadow-sm fw-bold d-md-none" onclick="handleLogout()">
+                        <i class="bi bi-box-arrow-left"></i>
+                    </button>
+                    
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                        <i id="themeIcon" class="bi bi-moon-fill"></i>
+                    </button>
+                    
+                    <div class="user-chip">
+                        <div class="user-info">
+                            <span class="user-name fw-bold" style="font-size: 0.85rem; color: var(--text-main);">Process Engineer</span>
+                            <span style="font-size: 0.65rem; color: #10B981; font-weight: 700;"><i class="bi bi-circle-fill" style="font-size: 0.4rem; margin-right: 2px;"></i> Online</span>
+                        </div>
+                        <div class="user-avatar">PE</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="tech-bg"><div class="tech-grid"></div></div>
+
+            <div id="mod-dashboard" class="module-content active" style="padding: 0;">
+                <div class="dashboard-wrapper p-4 p-md-5">
+                    
+                    <div class="text-center mb-4 flex-shrink-0">
+                        <h2 class="fw-bold text-main mb-2" style="letter-spacing: -0.5px;">CFD Simulation Platform</h2>
+                        <p class="text-muted fs-6 mx-auto mb-0" style="max-width: 600px;">
+                            Integrated computational fluid dynamics simulation system. Follow the guideline below to start a new simulation or monitor your computational performance metrics.
+                        </p>
+                    </div>
+
+                    <div class="workflow-stepper">
+                        <div class="wf-node" onclick="alert('Geometry / CAD Import module is not yet available.')">
+                            <div class="wf-icon"><i class="bi bi-box"></i></div>
+                            <div class="wf-label">1. Geometry</div>
+                        </div>
+                        <div class="wf-line"></div>
+                        <div class="wf-node" onclick="nav('meshing', 'Meshing Process', 'bi-bounding-box')">
+                            <div class="wf-icon"><i class="bi bi-grid-3x3"></i></div>
+                            <div class="wf-label">2. Meshing</div>
+                        </div>
+                        <div class="wf-line"></div>
+                        <div class="wf-node" onclick="nav('input-parameter', 'Input Parameters', 'bi-sliders2')">
+                            <div class="wf-icon"><i class="bi bi-funnel"></i></div>
+                            <div class="wf-label">3. Boundary<br>Condition</div>
+                        </div>
+                        <div class="wf-line"></div>
+                        <div class="wf-node" onclick="nav('solver', 'Solver Execution', 'bi-play-circle-fill')">
+                            <div class="wf-icon"><i class="bi bi-gear-wide-connected"></i></div>
+                            <div class="wf-label">4. Solving</div>
+                        </div>
+                        <div class="wf-line"></div>
+                        <div class="wf-node result-node" onclick="nav('paraview', 'Paraview Render', 'bi-display')">
+                            <div class="wf-icon"><i class="bi bi-bar-chart-fill"></i></div>
+                            <div class="wf-label">5. Result</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4 position-relative z-2 flex-shrink-0">
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card-custom m-0 h-100 p-3 d-flex align-items-center flex-row gap-3">
+                                <div class="stat-card-icon" style="background-color: var(--primary-brand);"><i class="bi bi-play-fill"></i></div>
+                                <div><div class="text-muted small fw-bold text-uppercase" style="font-size:0.7rem;">Total Runs</div><h4 class="fw-bold m-0 text-main">1,248</h4></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card-custom m-0 h-100 p-3 d-flex align-items-center flex-row gap-3">
+                                <div class="stat-card-icon" style="background-color: var(--accent-brand);"><i class="bi bi-clock-history"></i></div>
+                                <div><div class="text-muted small fw-bold text-uppercase" style="font-size:0.7rem;">Compute Hrs</div><h4 class="fw-bold m-0 text-main">452h</h4></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card-custom m-0 h-100 p-3 d-flex align-items-center flex-row gap-3">
+                                <div class="stat-card-icon" style="background-color: #10B981;"><i class="bi bi-check-circle"></i></div>
+                                <div><div class="text-muted small fw-bold text-uppercase" style="font-size:0.7rem;">Success Rate</div><h4 class="fw-bold m-0 text-main">92%</h4></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card-custom m-0 h-100 p-3 d-flex align-items-center flex-row gap-3">
+                                <div class="stat-card-icon" style="background-color: #6366f1;"><i class="bi bi-cpu"></i></div>
+                                <div><div class="text-muted small fw-bold text-uppercase" style="font-size:0.7rem;">Active Nodes</div><h4 class="fw-bold m-0 text-main">16/32</h4></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 position-relative z-2 flex-shrink-0" style="padding-bottom: 20px;">
+                        <div class="col-lg-8 col-md-12">
+                            <div class="card-custom m-0 h-100 p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h6 class="fw-bold text-main m-0">Simulation Activity (Last 7 Days)</h6>
+                                    <select class="form-select form-select-sm shadow-none w-auto border-color text-muted fw-bold"><option>Weekly</option><option>Monthly</option></select>
+                                </div>
+                                <div style="height: 250px; width: 100%;">
+                                    <canvas id="activityChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-12">
+                            <div class="card-custom m-0 h-100 p-4 d-flex flex-column">
+                                <h6 class="fw-bold text-main mb-4">Current Status Breakdown</h6>
+                                <div class="flex-grow-1" style="position: relative; min-height: 200px;">
+                                    <canvas id="statusChart"></canvas>
+                                </div>
+                                <div class="d-flex justify-content-center gap-3 mt-4 small fw-bold text-muted">
+                                    <div><i class="bi bi-circle-fill text-success-custom fs-6"></i> Success</div>
+                                    <div><i class="bi bi-circle-fill fs-6" style="color: var(--accent-brand);"></i> Failed</div>
+                                    <div><i class="bi bi-circle-fill text-primary fs-6"></i> Running</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="mod-input-parameter" class="module-content">
+                <ul class="nav cms-tabs flex-shrink-0">
+                    <li class="nav-item"><a class="nav-link">0. Initial Conditions (t=0)</a></li>
+                    <li class="nav-item"><a class="nav-link active">1. Boundary Conditions</a></li>
+                    <li class="nav-item"><a class="nav-link">2. Droplet & Nozzle</a></li>
+                    <li class="nav-item"><a class="nav-link">3. Thermophysical Properties</a></li>
+                    <li class="nav-item"><a class="nav-link">4. Physical Models</a></li>
+                    <li class="nav-item"><a class="nav-link">5. Numerical Settings</a></li>
+                    <li class="nav-item"><a class="nav-link">6. Validation</a></li>
+                </ul>
+
+                <div class="accordion accordion-custom flex-shrink-0" id="accordionBoundary">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1_1" aria-expanded="true">
+                                1.1 Inlet Gas Boundary Conditions
+                            </button>
+                        </h2>
+                        <div id="collapse1_1" class="accordion-collapse collapse show" data-bs-parent="#accordionBoundary">
+                            <div class="accordion-body">
+                                <div class="row g-4">
+                                    <div class="col-md-4 col-sm-6">
+                                        <label class="form-label">Inlet gas temperature (TIC)</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control shadow-none border-end-0" value="448">
+                                            <span class="input-group-text bg-surface text-muted border-start-0 ps-0" style="font-size: 0.8rem;">(175 °C)</span>
+                                            <span class="input-group-text">K</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 col-sm-6">
+                                        <label class="form-label">Inlet gas velocity (x-dir)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control shadow-none" value="19">
+                                            <span class="input-group-text">m/s</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 col-sm-12">
+                                        <label class="form-label">Inlet H2O mass fraction</label>
+                                        <input type="text" class="form-control shadow-none" value="0 (dry air assumed)">
+                                    </div>
+                                    <div class="col-md-6 col-sm-12">
+                                        <label class="form-label">Inlet turbulence intensity</label>
+                                        <input type="text" class="form-control shadow-none" value="0.05 (5 %)">
+                                    </div>
+                                     <div class="col-md-6 col-sm-12">
+                                        <label class="form-label">Inlet turbulence mixing length</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control shadow-none" value="8.200000000000003e-2">
+                                            <span class="input-group-text">m</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 mt-4 text-end">
+                                        <button class="btn btn-primary px-4 py-2"><i class="bi bi-save me-2"></i> Save Parameters</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1_2" aria-expanded="false">
+                                1.2 Outlet Boundary Conditions
+                            </button>
+                        </h2>
+                        <div id="collapse1_2" class="accordion-collapse collapse" data-bs-parent="#accordionBoundary">
+                            <div class="accordion-body">
+                                <p class="text-muted small mb-0">Configurations for outlet boundaries...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1_3" aria-expanded="false">
+                                1.3 Wall & Obstacle Thermal Bounds
+                            </button>
+                        </h2>
+                        <div id="collapse1_3" class="accordion-collapse collapse" data-bs-parent="#accordionBoundary">
+                            <div class="accordion-body">
+                                <p class="text-muted small mb-0">Configurations for walls...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mod-set-processor" class="module-content">
+                <div class="card-custom">
+                    <div class="row g-5 align-items-center">
+                        <div class="col-lg-5 col-md-12">
+                            <h5 class="fw-bold text-main mb-2">Processor Allocation</h5>
+                            <p class="small text-muted mb-4">Set maximum processor cores for computation based on your server capabilities.</p>
+                            
+                            <label class="form-label">Total Allocated Cores</label>
+                            <input type="range" class="form-range mt-2 mb-3" min="1" max="16" value="16" id="processor-slider">
+                            
+                            <div class="d-flex align-items-center gap-3 mb-4">
+                                <input type="number" class="form-control shadow-none text-center fw-bold fs-5 text-primary" id="processor-input" value="16" style="width: 100px;">
+                                <span class="fw-bold text-muted text-uppercase" style="letter-spacing: 1px;">Processors</span>
+                            </div>
+
+                            <button class="btn btn-primary w-100 py-3 shadow-sm fs-6"><i class="bi bi-cpu me-2"></i> Apply Configuration</button>
+                        </div>
+                        <div class="col-lg-7 col-md-12">
+                            <div class="processor-visuals" id="core-grid">
+                                </div>
+                            <div class="text-center mt-4">
+                                <span class="badge bg-success-custom px-3 py-2 fs-6 rounded-pill"><i class="bi bi-check-circle me-1"></i> Parallel Run Ready</span>
+                                <p class="small text-muted mt-3 mx-auto" style="max-width: 400px; line-height: 1.5;">This configuration will set the <code>numberOfSubdomains</code> value and run the decompose process when the solver feature is executed.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mod-meshing" class="module-content">
+                <div class="row g-4 h-100">
+                    <div class="col-12 flex-shrink-0">
+                        <div class="card-custom m-0">
+                            <div class="d-flex justify-content-between align-items-end mb-3">
+                                <div>
+                                    <h5 class="fw-bold text-main m-0">Meshing Progress</h5>
+                                    <p class="small text-muted m-0 mt-1">Preparing mesh dictionaries and block generation...</p>
+                                </div>
+                                <h3 class="fw-bold text-primary m-0">35%</h3>
+                            </div>
+                            <div class="progress" style="height: 12px; border-radius: 6px; background-color: var(--border-color);">
+                                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: 35%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 flex-grow-1 d-flex flex-column">
+                        <div class="card-custom flex-grow-1 d-flex flex-column m-0">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                <h6 class="fw-bold text-main m-0"><i class="bi bi-terminal-fill text-primary me-2 fs-5"></i> Meshing Terminal Log</h6>
+                                <button class="btn btn-outline-primary shadow-sm"><i class="bi bi-play-fill me-1"></i> Execute Meshing</button>
+                            </div>
+                            <div class="terminal flex-grow-1">
+                                <span style="color: #64748b;">[SYSTEM] Initializing OpenFOAM Environment...</span><br>
+                                <span style="color: #64748b;">[INFO] Waiting for user command...</span><br>
+                                <span style="color: #facc15;">> blockMesh</span><br>
+                                <span style="color: #facc15;">> surfaceFeatureExtract</span><br>
+                                <span style="color: #facc15;">> snappyHexMesh -overwrite</span><br>
+                                <span class="blink" style="animation: blink 1s step-end infinite;">_</span>
+                                <style>@keyframes blink { 50% { opacity: 0; } }</style>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mod-solver" class="module-content">
+                <div class="row g-4 h-100">
+                    <div class="col-12 flex-shrink-0">
+                        <div class="card-custom m-0">
+                            <div class="d-flex justify-content-between align-items-end mb-3">
+                                <div>
+                                    <h5 class="fw-bold text-main m-0">Solver Progress</h5>
+                                    <p class="small text-muted m-0 mt-1">Waiting for processor setup and initial fields...</p>
+                                </div>
+                                <h3 class="fw-bold text-primary m-0">12%</h3>
+                            </div>
+                            <div class="progress" style="height: 12px; border-radius: 6px; background-color: var(--border-color);">
+                                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: 12%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 flex-grow-1 d-flex flex-column">
+                        <div class="card-custom flex-grow-1 d-flex flex-column m-0">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                <h6 class="fw-bold text-main m-0"><i class="bi bi-terminal-fill text-primary me-2 fs-5"></i> Solver Terminal Log</h6>
+                                <button class="btn btn-outline-primary shadow-sm"><i class="bi bi-play-fill me-1"></i> Execute Solver</button>
+                            </div>
+                            <div class="terminal flex-grow-1">
+                                <span style="color: #64748b;">[SYSTEM] Initializing OpenFOAM Solver...</span><br>
+                                <span style="color: #64748b;">[INFO] Preparing parallel decomposition...</span><br>
+                                <span style="color: #facc15;">> decomposePar</span><br>
+                                <span style="color: #facc15;">> mpirun -np 16 sprayFoam -parallel</span><br>
+                                <span class="blink" style="animation: blink 1s step-end infinite;">_</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mod-paraview" class="module-content">
+                <div class="card-custom text-center p-5 my-auto">
+                    <i class="bi bi-display text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+                    <h4 class="fw-bold text-main mt-4">Paraview Visualization</h4>
+                    <p class="text-muted mt-2">3D visualizer integration is not yet active in this environment.</p>
+                </div>
+            </div>
+
+            <div id="mod-graph" class="module-content">
+                <div class="card-custom text-center p-5 my-auto">
+                    <i class="bi bi-graph-up-arrow text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+                    <h4 class="fw-bold text-main mt-4">Simulation History Graph</h4>
+                    <p class="text-muted mt-2">Matplotlib is not yet active in this environment.<br>The page template is ready to be connected to Python plot outputs.</p>
+                </div>
+            </div>
+
+            <div id="mod-report" class="module-content">
+                <div class="card-custom text-center p-5 my-auto">
+                    <i class="bi bi-clipboard-data text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+                    <h4 class="fw-bold text-main mt-4">Summary Report</h4>
+                    <p class="text-muted mt-2">This area is prepared for PDF compilation of parameter summaries, simulation status, and on-product data validation results.</p>
+                </div>
+            </div>
+
+        </div>
+    </div> 
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // --- Login Logic ---
+        function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+
+            if(user === 'kmi.cfd' && pass === 'kmi.cfd') {
+                document.getElementById('login-screen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('main-app').style.display = 'flex';
+                    // Render chart
+                    setTimeout(initDashboardCharts, 100);
+                }, 500);
+            } else {
+                alert("Invalid Username or Password.\nPlease use:\nUsername: kmi.cfd\nPassword: kmi.cfd");
+            }
+        }
+
+        // --- Logout Logic ---
+        function handleLogout() {
+            if(confirm("Are you sure you want to log out?")) {
+                // Return to login screen
+                document.getElementById('main-app').style.display = 'none';
+                document.getElementById('login-screen').style.display = 'flex';
+                
+                // Clear inputs
+                document.getElementById('login-user').value = '';
+                document.getElementById('login-pass').value = '';
+                
+                setTimeout(() => {
+                    document.getElementById('login-screen').style.opacity = '1';
+                }, 50);
+                
+                // Reset to dashboard for next login
+                nav('dashboard', 'Dashboard Workspace', 'bi-speedometer2');
+            }
+        }
+
+        // --- Navigation Logic ---
+        function nav(modId, title, iconClass) {
+            document.querySelectorAll('.module-icon').forEach(el => el.classList.remove('active'));
+            const targetIcon = document.querySelector(`.module-icon[onclick*="${modId}"]`);
+            if(targetIcon) {
+                targetIcon.classList.add('active');
+            }
+            
+            const pt = document.getElementById('page-title'); 
+            if(pt) {
+                pt.innerHTML = `<i class="bi ${iconClass} text-primary"></i> <span style="margin-left:5px;">${title}</span>`;
+            }
+            
+            document.querySelectorAll('.module-content').forEach(el => { 
+                el.classList.remove('active'); 
+                el.style.display = 'none'; 
+            });
+            const activeMod = document.getElementById(`mod-${modId}`); 
+            if(activeMod) { 
+                activeMod.classList.add('active'); 
+                activeMod.style.display = 'flex'; 
+            }
+            
+            if(modId === 'dashboard') {
+                setTimeout(initDashboardCharts, 100);
+            }
+        }
+
+        // --- Chart.js Variables & Functions ---
+        let activityChartInstance = null;
+        let statusChartInstance = null;
+
+        function initDashboardCharts() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const gridColor = isDark ? '#374151' : '#e5e7eb';
+            const textColor = isDark ? '#9ca3af' : '#6b7280';
+            const brandPrimary = '#008F4C';
+            const brandAccent = '#F26522';
+            
+            const activityCtx = document.getElementById('activityChart');
+            if(activityCtx) {
+                if(activityChartInstance) activityChartInstance.destroy();
+                activityChartInstance = new Chart(activityCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Simulations',
+                            data: [12, 19, 15, 25, 22, 30, 28],
+                            borderColor: brandPrimary,
+                            backgroundColor: 'rgba(0, 143, 76, 0.15)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#FFFFFF',
+                            pointBorderColor: brandPrimary,
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { color: textColor, stepSize: 10 }, grid: { color: gridColor, drawBorder: false } },
+                            x: { ticks: { color: textColor }, grid: { display: false, drawBorder: false } }
+                        }
+                    }
+                });
+            }
+
+            const statusCtx = document.getElementById('statusChart');
+            if(statusCtx) {
+                if(statusChartInstance) statusChartInstance.destroy();
+                statusChartInstance = new Chart(statusCtx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Success', 'Failed', 'Running'],
+                        datasets: [{
+                            data: [75, 15, 10],
+                            backgroundColor: ['#10B981', brandAccent, brandPrimary],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '75%',
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+        }
+
+        // --- Theme Toggle Logic ---
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            document.getElementById('themeIcon').className = newTheme === 'dark' ? 'bi bi-sun-fill text-warning' : 'bi bi-moon-fill';
+            
+            initDashboardCharts();
+        }
+
+        // Initialize Theme on load
+        (function initApp() { 
+            const t = localStorage.getItem('theme') || 'light'; 
+            document.documentElement.setAttribute('data-theme', t); 
+            document.getElementById('themeIcon').className = t === 'dark' ? 'bi bi-sun-fill text-warning' : 'bi bi-moon-fill';
+            
+            // Note: Charts wait to init until login is complete
+        })();
+
+        window.addEventListener('resize', () => {
+            // Only update charts if they are visible
+            if (document.getElementById('mod-dashboard').style.display !== 'none') {
+                initDashboardCharts();
+            }
+        });
+
+        // --- Processor Setup Logic ---
+        const slider = document.getElementById('processor-slider');
+        const inputBox = document.getElementById('processor-input');
+        const gridContainer = document.getElementById('core-grid');
+        const maxCores = 16;
+
+        function updateVisualCores(activeCount) {
+            if(!gridContainer) return;
+            gridContainer.innerHTML = '';
+            for (let i = 0; i < maxCores; i++) {
+                const coreDiv = document.createElement('div');
+                coreDiv.className = 'core-box ' + (i < activeCount ? '' : 'inactive');
+                coreDiv.innerHTML = `<i class="bi bi-cpu-fill"></i>`;
+                gridContainer.appendChild(coreDiv);
+            }
+        }
+
+        if(slider && inputBox && gridContainer) {
+            slider.addEventListener('input', (e) => {
+                const val = e.target.value;
+                inputBox.value = val;
+                updateVisualCores(val);
+            });
+
+            inputBox.addEventListener('input', (e) => {
+                let val = parseInt(e.target.value);
+                if (isNaN(val) || val < 1) val = 1;
+                if (val > maxCores) val = maxCores;
+                
+                slider.value = val;
+                updateVisualCores(val);
+            });
+
+            updateVisualCores(maxCores);
+        }
+    </script>
+</body>
+</html>

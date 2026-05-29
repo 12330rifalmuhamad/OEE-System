@@ -348,15 +348,15 @@ export default function ActivityCodesMasterPage() {
   };
 
   return (
-    <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto w-full bg-[#141318] text-[#f4f3f6]">
+    <div className="flex-1 p-6 md:p-8 flex flex-col gap-6 max-w-7xl mx-auto w-full bg-transparent text-[var(--text-primary)]">
       {/* Header Panel */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#26232b] pb-5">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[var(--border-color)] pb-5">
         <div>
-          <h2 className="text-xl font-bold text-zinc-100 tracking-tight flex items-center gap-2.5 font-mono">
+          <h2 className="text-xl font-bold text-[var(--text-primary)] tracking-tight flex items-center gap-2.5 font-mono">
             <Hash className="w-5 h-5 text-[#5ebd56]" />
             Master Data: Activity & Downtime Codes
           </h2>
-          <p className="text-xs text-[#8e8b94] mt-1 font-mono">Manage plant activities, downtime reason codes, setup/changeovers, and breakdown codes.</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1 font-mono">Manage plant activities, downtime reason codes, setup/changeovers, and breakdown codes.</p>
         </div>
 
         <div className="flex gap-2">
@@ -368,7 +368,7 @@ export default function ActivityCodesMasterPage() {
               setCsvText("");
               setIsBulkOpen(true);
             }}
-            className="flex items-center gap-2 px-3.5 py-2 bg-[#1c1a21] hover:bg-zinc-800 text-zinc-300 border border-[#26232b] font-bold rounded-lg text-xs transition-colors cursor-pointer uppercase font-mono tracking-wider"
+            className="flex items-center gap-2 px-3.5 py-2 bg-[var(--bg-card)] hover:bg-[var(--hover-bg)] text-[var(--text-primary)] border border-[var(--border-color)] font-bold rounded-lg text-xs transition-colors cursor-pointer uppercase font-mono tracking-wider shadow-[var(--card-shadow)]"
           >
             <Upload className="w-3.5 h-3.5 text-[#5ebd56]" />
             Import Excel / CSV
@@ -393,27 +393,27 @@ export default function ActivityCodesMasterPage() {
         </div>
       )}
       {error && !isModalOpen && (
-        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-450 p-4 rounded-lg text-xs font-semibold flex items-center gap-2">
+        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-4 rounded-lg text-xs font-semibold flex items-center gap-2">
           <AlertCircle className="w-4 h-4" />
           {error}
         </div>
       )}
 
       {/* Search & Actions Utility */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-[#1c1a21] border border-[#26232b] p-4 rounded-xl">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-[var(--bg-card)] border border-[var(--border-color)] p-4 rounded-xl shadow-[var(--card-shadow)]">
         <div className="relative w-full sm:max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8e8b94]" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)]" />
           <input
             type="text"
             placeholder="Search codes by name, category, or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-[#121114] border border-[#26232b] rounded-lg text-xs text-zinc-100 placeholder-zinc-650 focus:outline-none focus:border-[#5ebd56] font-mono"
+            className="w-full pl-9 pr-4 py-2 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-xs text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:outline-none focus:border-[#5ebd56] font-mono transition-all"
           />
         </div>
         <button
           onClick={fetchActivityCodes}
-          className="p-2 bg-[#121114] hover:bg-zinc-800 border border-[#26232b] rounded-lg text-[#8e8b94] hover:text-zinc-200 transition-colors cursor-pointer"
+          className="p-2 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
           title="Reload Data"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -421,11 +421,11 @@ export default function ActivityCodesMasterPage() {
       </div>
 
       {/* Activity Codes Data Table */}
-      <div className="bg-[#1c1a21] border border-[#26232b] rounded-xl overflow-hidden shadow-lg">
+      <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl overflow-hidden shadow-[var(--card-shadow)]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-[#1c1a21] border-b border-[#26232b] text-[#8e8b94] font-semibold uppercase tracking-wider font-mono">
+              <tr className="bg-[var(--bg-sidebar)]/30 border-b border-[var(--border-color)] text-[var(--text-secondary)] font-semibold uppercase tracking-wider font-mono">
                 <th className="py-4 px-6 text-center w-16">No</th>
                 <th className="py-4 px-6">Activity Code</th>
                 <th className="py-4 px-6">OEE Category</th>
@@ -435,52 +435,52 @@ export default function ActivityCodesMasterPage() {
                 <th className="py-4 px-6 text-center w-28">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#26232b] text-zinc-300 font-mono">
+            <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-primary)] font-mono">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#8e8b94] italic">
+                  <td colSpan={7} className="py-12 text-center text-[var(--text-secondary)] italic">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto text-[#5ebd56] mb-2" />
                     Fetching activity database...
                   </td>
                 </tr>
               ) : filteredActivityCodes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#8e8b94] italic font-sans font-medium">
+                  <td colSpan={7} className="py-12 text-center text-[var(--text-secondary)] italic font-sans font-medium">
                     No activity codes found matching query.
                   </td>
                 </tr>
               ) : (
                 filteredActivityCodes.map((ac, idx) => (
-                  <tr key={ac.id} className="hover:bg-[#232029]/20 transition-colors">
-                    <td className="py-4 px-6 text-center text-[#8e8b94] font-semibold">{idx + 1}</td>
+                  <tr key={ac.id} className="hover:bg-[var(--hover-bg)]/20 transition-colors border-b border-[var(--border-color)]/40">
+                    <td className="py-4 px-6 text-center text-[var(--text-secondary)] font-semibold">{idx + 1}</td>
                     <td className="py-4 px-6">
-                      <span className="font-mono bg-[#121114] px-2.5 py-1 rounded text-xs text-[#5ebd56] border border-[#26232b]">
+                      <span className="font-mono bg-[var(--bg-input)] px-2.5 py-1 rounded text-xs text-[#5ebd56] border border-[var(--border-color)] font-bold">
                         {ac.code.toUpperCase()}
                       </span>
                     </td>
                     <td className="py-4 px-6">
-                      <span className="flex items-center gap-1.5 font-bold text-zinc-200">
-                        <Layers className="w-3.5 h-3.5 text-zinc-650" />
+                      <span className="flex items-center gap-1.5 font-bold text-[var(--text-primary)]">
+                        <Layers className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                         {ac.category.name}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-zinc-300 font-sans font-semibold">{ac.mainActivity || "-"}</td>
-                    <td className="py-4 px-6 text-zinc-400 font-sans font-medium">{ac.subActivity || "-"}</td>
-                    <td className="py-4 px-6 text-zinc-500 font-sans max-w-xs truncate" title={ac.fullDescription}>
+                    <td className="py-4 px-6 text-[var(--text-primary)] font-sans font-semibold">{ac.mainActivity || "-"}</td>
+                    <td className="py-4 px-6 text-[var(--text-secondary)] font-sans font-medium">{ac.subActivity || "-"}</td>
+                    <td className="py-4 px-6 text-[var(--text-secondary)]/80 font-sans max-w-xs truncate" title={ac.fullDescription}>
                       {ac.fullDescription}
                     </td>
                     <td className="py-4 px-6 text-center">
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => handleOpenEdit(ac)}
-                          className="p-1.5 bg-[#121114] hover:bg-[#5ebd56]/10 border border-[#26232b] hover:border-[#5ebd56]/30 text-[#8e8b94] hover:text-[#5ebd56] rounded transition-colors cursor-pointer"
+                          className="p-1.5 bg-[var(--bg-input)] hover:bg-[#5ebd56]/10 border border-[var(--border-color)] hover:border-[#5ebd56]/30 text-[var(--text-secondary)] hover:text-[#5ebd56] rounded transition-colors cursor-pointer"
                           title="Edit"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(ac.id)}
-                          className="p-1.5 bg-[#121114] hover:bg-rose-500/10 border border-[#26232b] hover:border-rose-500/30 text-[#8e8b94] hover:text-rose-400 rounded transition-colors cursor-pointer"
+                          className="p-1.5 bg-[var(--bg-input)] hover:bg-rose-500/10 border border-[var(--border-color)] hover:border-rose-500/30 text-[var(--text-secondary)] hover:text-rose-500 rounded transition-colors cursor-pointer"
                           title="Delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -497,19 +497,19 @@ export default function ActivityCodesMasterPage() {
 
       {/* BULK IMPORT MODAL DIALOG */}
       {isBulkOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#1c1a21] border border-[#26232b] rounded-xl max-w-3xl w-full overflow-hidden shadow-2xl relative flex flex-col max-h-[85vh]">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl max-w-3xl w-full overflow-hidden shadow-2xl relative flex flex-col max-h-[85vh]">
             {/* Header */}
-            <div className="flex justify-between items-center p-5 border-b border-[#26232b] bg-[#141318]">
+            <div className="flex justify-between items-center p-5 border-b border-[var(--border-color)] bg-[var(--bg-sidebar)]/40">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="w-5 h-5 text-[#5ebd56]" />
-                <h3 className="font-bold text-sm uppercase tracking-wider text-zinc-100 font-mono">
+                <h3 className="font-bold text-sm uppercase tracking-wider text-[var(--text-primary)] font-mono">
                   Bulk Import Activity Codes
                 </h3>
               </div>
               <button
                 onClick={() => setIsBulkOpen(false)}
-                className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-[var(--hover-bg)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -518,24 +518,24 @@ export default function ActivityCodesMasterPage() {
             {/* Scrollable Content */}
             <div className="p-6 overflow-y-auto space-y-5 flex-1 text-xs font-mono">
               {bulkError && (
-                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-450 p-3.5 rounded-lg font-semibold flex items-center gap-2">
+                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3.5 rounded-lg font-semibold flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{bulkError}</span>
                 </div>
               )}
 
               {/* Template instructions */}
-              <div className="bg-[#121114] border border-[#26232b] p-4 rounded-lg space-y-2">
+              <div className="bg-[var(--bg-input)] border border-[var(--border-color)] p-4 rounded-lg space-y-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-zinc-300 uppercase tracking-wider text-[10px]">Excel Copy-Paste Supported!</span>
+                  <span className="font-bold text-[var(--text-primary)] uppercase tracking-wider text-[10px]">Excel Copy-Paste Supported!</span>
                   <span className="bg-[#1a2e22] text-emerald-450 px-2 py-0.5 rounded text-[8px] font-bold uppercase border border-emerald-500/10">Idempotent Upsert</span>
                 </div>
-                <p className="text-zinc-500 font-sans font-medium leading-relaxed">
+                <p className="text-[var(--text-secondary)] font-sans font-medium leading-relaxed">
                   You can copy cells from Excel or Google Sheets (containing code, category, main activity, sub activity, full description) and paste them directly in the text area below. Tabs and commas are auto-detected, and OEE categories are auto-extracted from the code prefix!
                 </p>
                 <div className="pt-2">
-                  <span className="font-semibold text-[#8e8b94]">Excel Column Layout:</span>
-                  <div className="text-[9px] text-[#5ebd56] bg-[#1c1a21] border border-[#26232b] p-2 rounded mt-1 overflow-x-auto select-all">
+                  <span className="font-semibold text-[var(--text-secondary)]">Excel Column Layout:</span>
+                  <div className="text-[9px] text-[#5ebd56] bg-[var(--bg-input)] border border-[var(--border-color)] p-2 rounded mt-1 overflow-x-auto select-all">
                     Code [Tab] Category Name [Tab] Main Activity [Tab] - [Tab] Sub Activity [Tab] Full Description
                   </div>
                 </div>
@@ -546,11 +546,11 @@ export default function ActivityCodesMasterPage() {
                 
                 {/* Drag / File selector */}
                 <div className="flex flex-col gap-2">
-                  <span className="font-bold text-[#8e8b94] uppercase tracking-wider text-[10px]">Option A: Upload CSV File</span>
-                  <label className="border-2 border-dashed border-[#26232b] hover:border-[#5ebd56] rounded-lg p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-[#121114]/50 h-36">
+                  <span className="font-bold text-[var(--text-secondary)] uppercase tracking-wider text-[10px]">Option A: Upload CSV File</span>
+                  <label className="border-2 border-dashed border-[var(--border-color)] hover:border-[#5ebd56] rounded-lg p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-[var(--bg-input)]/50 h-36">
                     <Upload className="w-6 h-6 text-zinc-500" />
-                    <span className="font-bold text-zinc-300 font-sans">Choose CSV File</span>
-                    <span className="text-[10px] text-zinc-650 font-sans">Select a local .csv file</span>
+                    <span className="font-bold text-[var(--text-primary)] font-sans">Choose CSV File</span>
+                    <span className="text-[10px] text-[var(--text-secondary)] font-sans">Select a local .csv file</span>
                     <input
                       type="file"
                       accept=".csv"
@@ -562,7 +562,7 @@ export default function ActivityCodesMasterPage() {
 
                 {/* Direct Paste Area */}
                 <div className="flex flex-col gap-2">
-                  <span className="font-bold text-[#8e8b94] uppercase tracking-wider text-[10px]">Option B: Copy-Paste Excel Cells Directly</span>
+                  <span className="font-bold text-[var(--text-secondary)] uppercase tracking-wider text-[10px]">Option B: Copy-Paste Excel Cells Directly</span>
                   <textarea
                     placeholder="Select cells from Excel, Copy, and Paste them here..."
                     value={csvText}
@@ -571,7 +571,7 @@ export default function ActivityCodesMasterPage() {
                       handleParseCsv(e.target.value);
                     }}
                     rows={6}
-                    className="w-full p-3 bg-[#121114] border border-[#26232b] focus:border-[#5ebd56] rounded-lg text-[10px] text-zinc-300 placeholder-zinc-700 focus:outline-none resize-none h-36"
+                    className="w-full p-3 bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-[#5ebd56] rounded-lg text-[10px] text-[var(--text-primary)] placeholder-[var(--text-secondary)]/40 focus:outline-none resize-none h-36"
                   />
                 </div>
 
@@ -581,16 +581,16 @@ export default function ActivityCodesMasterPage() {
               {bulkPreview.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-zinc-300 uppercase tracking-wider text-[10px]">
+                    <span className="font-bold text-[var(--text-primary)] uppercase tracking-wider text-[10px]">
                       Live Data Preview ({bulkPreview.length} items detected)
                     </span>
                     <span className="text-[9px] text-[#5ebd56] font-semibold">Parsed successfully!</span>
                   </div>
 
-                  <div className="border border-[#26232b] rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                  <div className="border border-[var(--border-color)] rounded-lg overflow-hidden max-h-48 overflow-y-auto">
                     <table className="w-full text-left border-collapse text-[10px]">
                       <thead>
-                        <tr className="bg-[#121114] text-zinc-500 font-bold uppercase tracking-wider border-b border-[#26232b]">
+                        <tr className="bg-[var(--bg-input)] text-[var(--text-secondary)] font-bold uppercase tracking-wider border-b border-[var(--border-color)]">
                           <th className="py-2 px-3 w-14">Category</th>
                           <th className="py-2 px-3 w-20">Code</th>
                           <th className="py-2 px-3">Main Activity</th>
@@ -598,14 +598,14 @@ export default function ActivityCodesMasterPage() {
                           <th className="py-2 px-3">Description</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#26232b] text-zinc-300 bg-[#121114]/30">
+                      <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-primary)] bg-[var(--bg-input)]/30">
                         {bulkPreview.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-white/[0.01]">
+                          <tr key={idx} className="hover:bg-[var(--hover-bg)]/20 transition-all">
                             <td className="py-1.5 px-3 font-bold text-[#5ebd56]">{row.categoryCode}</td>
-                            <td className="py-1.5 px-3 text-zinc-200">{row.code}</td>
-                            <td className="py-1.5 px-3 truncate max-w-[120px]" title={row.mainActivity}>{row.mainActivity || "-"}</td>
-                            <td className="py-1.5 px-3 truncate max-w-[120px]" title={row.subActivity}>{row.subActivity || "-"}</td>
-                            <td className="py-1.5 px-3 text-zinc-500 truncate max-w-[200px]" title={row.fullDescription}>{row.fullDescription}</td>
+                            <td className="py-1.5 px-3 text-[var(--text-primary)]">{row.code}</td>
+                            <td className="py-1.5 px-3 truncate max-w-[120px] text-[var(--text-primary)]" title={row.mainActivity}>{row.mainActivity || "-"}</td>
+                            <td className="py-1.5 px-3 truncate max-w-[120px] text-[var(--text-secondary)]" title={row.subActivity}>{row.subActivity || "-"}</td>
+                            <td className="py-1.5 px-3 text-[var(--text-secondary)]/80 truncate max-w-[200px]" title={row.fullDescription}>{row.fullDescription}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -617,11 +617,11 @@ export default function ActivityCodesMasterPage() {
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex justify-end gap-3 p-5 border-t border-[#26232b] bg-[#141318]">
+            <div className="flex justify-end gap-3 p-5 border-t border-[var(--border-color)] bg-[var(--bg-sidebar)]/40">
               <button
                 type="button"
                 onClick={() => setIsBulkOpen(false)}
-                className="px-4 py-2 bg-zinc-850 hover:bg-zinc-800 text-zinc-300 font-semibold rounded-lg text-xs transition-colors cursor-pointer uppercase tracking-wider"
+                className="px-4 py-2 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold rounded-lg text-xs transition-colors cursor-pointer uppercase tracking-wider"
               >
                 Cancel
               </button>
@@ -650,16 +650,16 @@ export default function ActivityCodesMasterPage() {
 
       {/* MODAL ADD/EDIT DIALOG */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#1c1a21] border border-[#26232b] rounded-xl max-w-lg w-full overflow-hidden shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl max-w-lg w-full overflow-hidden shadow-2xl relative">
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-5 border-b border-[#26232b] bg-[#141318]">
-              <h3 className="font-bold text-sm uppercase tracking-wider text-zinc-100 font-mono">
+            <div className="flex justify-between items-center p-5 border-b border-[var(--border-color)] bg-[var(--bg-sidebar)]/40">
+              <h3 className="font-bold text-sm uppercase tracking-wider text-[var(--text-primary)] font-mono">
                 {modalMode === "ADD" ? "Add New Activity Code" : "Edit Activity Code"}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 hover:bg-zinc-850 rounded-lg text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-[var(--hover-bg)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -668,7 +668,7 @@ export default function ActivityCodesMasterPage() {
             {/* Modal Form */}
             <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4 font-mono">
               {error && (
-                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-450 p-3 rounded-lg text-xs font-semibold flex items-center gap-2">
+                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 p-3 rounded-lg text-xs font-semibold flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />
                   {error}
                 </div>
@@ -676,14 +676,14 @@ export default function ActivityCodesMasterPage() {
 
               {/* OEE Category Select */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-[#8e8b94] uppercase tracking-wide">OEE Loss Category *</label>
+                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide">OEE Loss Category *</label>
                 <select
                   value={formCategoryCode}
                   onChange={(e) => setFormCategoryCode(e.target.value)}
-                  className="px-3.5 py-2.5 bg-[#121114] border border-[#26232b] rounded-lg text-sm text-zinc-100 focus:outline-none focus:border-[#5ebd56] font-sans cursor-pointer"
+                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-[#5ebd56] font-sans cursor-pointer"
                 >
                   {categoryOptions.map((opt) => (
-                    <option key={opt.code} value={opt.code}>
+                    <option key={opt.code} value={opt.code} className="bg-[var(--bg-card)] text-[var(--text-primary)]">
                       {opt.name}
                     </option>
                   ))}
@@ -692,60 +692,60 @@ export default function ActivityCodesMasterPage() {
 
               {/* Activity Code input */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-[#8e8b94] uppercase tracking-wide">Activity Code *</label>
+                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide">Activity Code *</label>
                 <input
                   type="text"
                   placeholder="e.g., BR.1 or SH.2"
                   value={formCode}
                   onChange={(e) => setFormCode(e.target.value)}
                   required
-                  className="px-3.5 py-2.5 bg-[#121114] border border-[#26232b] rounded-lg text-sm text-zinc-100 placeholder-zinc-700 focus:outline-none focus:border-[#5ebd56] font-sans"
+                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/40 focus:outline-none focus:border-[#5ebd56] font-sans"
                 />
               </div>
 
               {/* Main Activity */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-[#8e8b94] uppercase tracking-wide">Main Activity Name</label>
+                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide">Main Activity Name</label>
                 <input
                   type="text"
                   placeholder="e.g., Breakdown Mechanical"
                   value={formMainActivity}
                   onChange={(e) => setFormMainActivity(e.target.value)}
-                  className="px-3.5 py-2.5 bg-[#121114] border border-[#26232b] rounded-lg text-sm text-zinc-100 placeholder-zinc-700 focus:outline-none focus:border-[#5ebd56] font-sans"
+                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/40 focus:outline-none focus:border-[#5ebd56] font-sans"
                 />
               </div>
 
               {/* Sub Activity */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-[#8e8b94] uppercase tracking-wide">Sub Activity Name</label>
+                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide">Sub Activity Name</label>
                 <input
                   type="text"
                   placeholder="e.g., Chain Sprocket Slipping"
                   value={formSubActivity}
                   onChange={(e) => setFormSubActivity(e.target.value)}
-                  className="px-3.5 py-2.5 bg-[#121114] border border-[#26232b] rounded-lg text-sm text-zinc-100 placeholder-zinc-700 focus:outline-none focus:border-[#5ebd56] font-sans"
+                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/40 focus:outline-none focus:border-[#5ebd56] font-sans"
                 />
               </div>
 
               {/* Full Description */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-[#8e8b94] uppercase tracking-wide">Full Audit Description *</label>
+                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide">Full Audit Description *</label>
                 <textarea
                   placeholder="e.g., Breakdown Mechanical - Chain Sprocket Slipping"
                   value={formFullDescription}
                   onChange={(e) => setFormFullDescription(e.target.value)}
                   required
                   rows={3}
-                  className="px-3.5 py-2.5 bg-[#121114] border border-[#26232b] rounded-lg text-sm text-zinc-100 placeholder-zinc-700 focus:outline-none focus:border-[#5ebd56] font-sans resize-none"
+                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/40 focus:outline-none focus:border-[#5ebd56] font-sans resize-none"
                 />
               </div>
 
               {/* Form Buttons */}
-              <div className="flex justify-end gap-3 border-t border-[#26232b] pt-5 mt-4">
+              <div className="flex justify-end gap-3 border-t border-[var(--border-color)] pt-5 mt-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-zinc-850 hover:bg-zinc-800 text-zinc-300 font-semibold rounded-lg text-xs transition-all cursor-pointer font-mono"
+                  className="px-4 py-2 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold rounded-lg text-xs transition-all cursor-pointer font-mono"
                 >
                   Cancel
                 </button>

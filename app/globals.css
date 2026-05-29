@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+:root, [data-theme="light"] {
+  --bg-base: #f4f7f6;
+  --bg-card: #ffffff;
+  --bg-input: #eef3f0;
+  --border-color: #d1ded6;
+  --text-primary: #1b2e22;
+  --text-secondary: #556f5e;
+  --bg-sidebar: #eaf2ee;
+  --border-sidebar: #cbdcd2;
+  --hover-bg: #dceae2;
+  --hover-bg-muted: rgba(94, 189, 86, 0.1);
+  --btn-login-bg: rgba(94, 189, 86, 0.15);
+  --btn-login-border: rgba(94, 189, 86, 0.3);
+  --btn-login-text: #3c9d35;
+  --card-shadow: 0 4px 20px -2px rgba(27, 46, 34, 0.05);
+  --ring-bg: #dceae2;
+}
+
+[data-theme="dark"] {
+  --bg-base: #141318;
+  --bg-card: #1c1a21;
+  --bg-input: #121114;
+  --border-color: #26232b;
+  --text-primary: #f4f3f6;
+  --text-secondary: #8e8b94;
+  --bg-sidebar: #1c1a21;
+  --border-sidebar: #26232b;
+  --hover-bg: #232029;
+  --hover-bg-muted: rgba(94, 189, 86, 0.05);
+  --btn-login-bg: rgba(94, 189, 86, 0.1);
+  --btn-login-border: rgba(94, 189, 86, 0.2);
+  --btn-login-text: #5ebd56;
+  --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+  --ring-bg: #2c2833;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom fade-in utility */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+/* Custom badge utilities for role/status directories */
+.badge-owner {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: #b45309; /* amber-700 for high contrast in light mode */
+}
+[data-theme="dark"] .badge-owner {
+  color: #fbbf24; /* amber-400 for high contrast in night mode */
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.badge-manager {
+  background-color: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.2);
+  color: #6d28d9; /* violet-700 for high contrast in light mode */
+}
+[data-theme="dark"] .badge-manager {
+  color: #a78bfa; /* violet-400 for high contrast in night mode */
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.badge-operator {
+  background-color: rgba(94, 189, 86, 0.15);
+  border-color: rgba(94, 189, 86, 0.3);
+  color: #1b5e20; /* dark green for high contrast in light mode */
+}
+[data-theme="dark"] .badge-operator {
+  background-color: rgba(94, 189, 86, 0.1);
+  border-color: rgba(94, 189, 86, 0.2);
+  color: #5ebd56; /* bright green for high contrast in night mode */
+}
+
