@@ -1,10 +1,11 @@
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
+const { recalculateOkpLogOee } = require("../lib/oeeHelper");
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🚀 Starting database seeding...");
+  console.log("🚀 Starting realistic database seeding...");
 
   // 0. Reset existing data to prevent unique constraints errors
   console.log("🧹 Cleaning up existing records...");
@@ -14,6 +15,7 @@ async function main() {
   await prisma.kpiTarget.deleteMany({});
   await prisma.user.deleteMany({});
   await prisma.activityCode.deleteMany({});
+  await prisma.mqttConfig.deleteMany({});
   await prisma.machine.deleteMany({});
   await prisma.lineProcess.deleteMany({});
   await prisma.product.deleteMany({});
@@ -29,7 +31,7 @@ async function main() {
     },
   });
 
-  // 2. SEED USERS (with hashed passwords using bcryptjs)
+  // 2. SEED USERS
   console.log("👤 Seeding Users...");
   const hashedPassword = await bcrypt.hash("admin123", 10);
   
@@ -56,7 +58,7 @@ async function main() {
     ],
   });
 
-  // 3. SEED GLOBAL ACTIVITY CATEGORIES (PR, SH, BR, SE, MI, CT, OT, ST)
+  // 3. SEED GLOBAL ACTIVITY CATEGORIES
   console.log("📦 Seeding Global Activity Categories...");
   const categories = {
     PR: await prisma.activityCategory.create({ data: { code: "PR", name: "Process Run (Productive)" } }),
@@ -69,7 +71,7 @@ async function main() {
     ST: await prisma.activityCategory.create({ data: { code: "ST", name: "Startup Losses" } }),
   };
 
-  // 4. SEED SPECIFIC ACTIVITY CODES per Company
+  // 4. SEED RICH SPECIFIC ACTIVITY CODES
   console.log("⚙️ Seeding Specific Activity Codes...");
   const codes = {
     normalRun: await prisma.activityCode.create({
@@ -102,6 +104,16 @@ async function main() {
         fullDescription: "Routine bi-weekly preventive maintenance audit",
       },
     }),
+    unknownStoppage: await prisma.activityCode.create({
+      data: {
+        companyId: company.id,
+        categoryId: categories.BR.id,
+        code: "unknown",
+        mainActivity: "Unknown Stoppage",
+        subActivity: "Belum Diklasifikasikan",
+        fullDescription: "Penyebab tidak diketahui secara otomatis oleh sistem, silakan pilih penyebab yang benar.",
+      },
+    }),
     conveyorJam: await prisma.activityCode.create({
       data: {
         companyId: company.id,
@@ -122,6 +134,26 @@ async function main() {
         fullDescription: "Line block photoeye sensor failed or misaligned",
       },
     }),
+    airPressureDrop: await prisma.activityCode.create({
+      data: {
+        companyId: company.id,
+        categoryId: categories.BR.id,
+        code: "br.3",
+        mainActivity: "Breakdown Pneumatic",
+        subActivity: "Air Pressure Drop",
+        fullDescription: "System pneumatic pressure fell below 5.5 bar threshold",
+      },
+    }),
+    labelJammed: await prisma.activityCode.create({
+      data: {
+        companyId: company.id,
+        categoryId: categories.BR.id,
+        code: "br.4",
+        mainActivity: "Breakdown Material",
+        subActivity: "Label Jammed",
+        fullDescription: "Label roll feeding mechanism jammed or torn paper",
+      },
+    }),
     calibration: await prisma.activityCode.create({
       data: {
         companyId: company.id,
@@ -132,6 +164,16 @@ async function main() {
         fullDescription: "Weight filling head adjustment and dosing test",
       },
     }),
+    toolChange: await prisma.activityCode.create({
+      data: {
+        companyId: company.id,
+        categoryId: categories.SE.id,
+        code: "se.2",
+        mainActivity: "Setup & Adjustments",
+        subActivity: "Seaming Chuck Replacement",
+        fullDescription: "Replacing worn seamer chuck and setting height parameters",
+      },
+    }),
     minorStoppage: await prisma.activityCode.create({
       data: {
         companyId: company.id,
@@ -140,6 +182,36 @@ async function main() {
         mainActivity: "Minor Stoppages",
         subActivity: "Chute Jamming",
         fullDescription: "Temporary chute blockage cleared within 2 minutes",
+      },
+    }),
+    sizeChangeover: await prisma.activityCode.create({
+      data: {
+        companyId: company.id,
+        categoryId: categories.CT.id,
+        code: "ct.1",
+        mainActivity: "Changeover",
+        subActivity: "Format Change 400g to 800g",
+        fullDescription: "Replacing guide rails and guides for larger tin format",
+      },
+    }),
+    warmUpTrial: await prisma.activityCode.create({
+      data: {
+        companyId: company.id,
+        categoryId: categories.ST.id,
+        code: "st.1",
+        mainActivity: "Startup Losses",
+        subActivity: "Line Warm-up & Test run",
+        fullDescription: "Heating seamer tooling and performing blank run trials",
+      },
+    }),
+    waitMaterial: await prisma.activityCode.create({
+      data: {
+        companyId: company.id,
+        categoryId: categories.OT.id,
+        code: "ot.1",
+        mainActivity: "Other Downtime",
+        subActivity: "Waiting for Bulk Powder",
+        fullDescription: "Drying tower batch transfer delay from raw material warehouse",
       },
     }),
   };
@@ -153,20 +225,40 @@ async function main() {
     },
   });
 
-  const lineB2 = await prisma.lineProcess.create({
-    data: {
-      name: "Line B2",
-      companyId: company.id,
-    },
-  });
-
-  const machines = [
-    await prisma.machine.create({ data: { name: "Filling Line A4", companyId: company.id, lineProcessId: lineA4.id } }),
-    await prisma.machine.create({ data: { name: "Seaming Line A4", companyId: company.id, lineProcessId: lineA4.id } }),
-    await prisma.machine.create({ data: { name: "Cartooning Line A4", companyId: company.id, lineProcessId: lineA4.id } }),
+  const machineData = [
+    { name: "Filling Line A4", code: "machine1" },
+    { name: "Seaming Line A4", code: "machine2" },
+    { name: "Cartooning Line A4", code: "machine3" },
+    { name: "Labeling Line A4", code: "machine4" },
   ];
 
-  // 6. SEED PRODUCTS & STANDARDS SPEED
+  const machines = [];
+  for (const m of machineData) {
+    const machine = await prisma.machine.create({
+      data: {
+        name: m.name,
+        companyId: company.id,
+        lineProcessId: lineA4.id,
+      },
+    });
+    machines.push(machine);
+
+    // Seed MQTT config for this machine
+    await prisma.mqttConfig.create({
+      data: {
+        companyId: company.id,
+        machineId: machine.id,
+        brokerUrl: "mqtt://broker.hivemq.com:1883",
+        clientId: `kmi_oee_${m.code}_client`,
+        counterTopic: `kmi/rifdiansyah_oee/lineA4/${m.code}/counter`,
+        statusTopic: `kmi/rifdiansyah_oee/lineA4/${m.code}/status`,
+        statusRunValue: "1",
+        statusStopValue: "0",
+      },
+    });
+  }
+
+  // 6. SEED PRODUCTS
   console.log("📦 Seeding Products...");
   const products = [
     await prisma.product.create({
@@ -175,7 +267,7 @@ async function main() {
         productCode: "CHIL-KID-800",
         name: "Chil Kid Platinum Vanilla",
         size: "800g",
-        standarSpeed: 120.0, // 120 pcs per menit
+        standarSpeed: 120.0, // 120 pcs/menit
       },
     }),
     await prisma.product.create({
@@ -184,7 +276,7 @@ async function main() {
         productCode: "BMT-GOLD-400",
         name: "Morinaga BMT Gold Regular",
         size: "400g",
-        standarSpeed: 140.0, // 140 pcs per menit
+        standarSpeed: 140.0, // 140 pcs/menit
       },
     }),
     await prisma.product.create({
@@ -193,13 +285,13 @@ async function main() {
         productCode: "CHIL-MIL-800",
         name: "Chil Mil Regular Honey",
         size: "800g",
-        standarSpeed: 110.0,
+        standarSpeed: 110.0, // 110 pcs/menit
       },
     }),
   ];
 
-  // 7. SEED KPI BENCHMARKS TARGET (World-Class OEE Standard)
-  console.log("🎯 Seeding KPI Benchmarks Target...");
+  // 7. SEED KPI TARGETS
+  console.log("🎯 Seeding KPI Target...");
   await prisma.kpiTarget.create({
     data: {
       companyId: company.id,
@@ -210,136 +302,267 @@ async function main() {
     },
   });
 
-  // 8. SEED TRANSACTION DATA (Historical OKP logs for the last 3 days)
-  console.log("📊 Seeding Historical OKP Production Logs & Downtimes...");
+  // 8. SEED TRANSACTION DATA
+  console.log("📊 Seeding Historical OKP Production Logs & Activity Logs...");
   
-  // Date helpers
   const day1 = new Date(); day1.setDate(day1.getDate() - 2);
   const day2 = new Date(); day2.setDate(day2.getDate() - 1);
   const day3 = new Date(); // Today
 
-  const okpLogsData = [
+  // Machine configurations to vary OEE parameters realistically
+  const simulationProfiles = [
     {
-      okpNumber: "OKP-20260523-01",
-      date: day1,
-      shift: 1,
-      machineId: machines[0].id,
-      productId: products[0].id,
-      groupLeader: "Agus Prasetyo",
-      operator: "Bambang Pamungkas",
-      helper: "Doni Setiawan",
-      loadingTime: 480.0,
-      totalOutput: 48200.0,
-      rework: 80.0,
-      reject: 20.0,
-      sampleQc: 5.0,
+      // Machine 1: Filling Line A4 (Bottleneck, has calibration & waiting material)
+      name: "Filling Line A4",
+      operators: ["Bambang Pamungkas", "Candra Darusman", "Feri Irawan"],
+      helpers: ["Doni Setiawan", "Eko Wahyudi", "Guntur Triaji"],
+      leaders: ["Agus Prasetyo", "Agus Prasetyo", "Yusuf Habibie"],
+      history: [
+        {
+          output: 48500, rework: 80, reject: 20, loading: 480,
+          stoppages: [
+            { code: codes.calibration, duration: 15, offsetHours: 1 },
+            { code: codes.waitMaterial, duration: 25, offsetHours: 4 },
+            { code: codes.minorStoppage, duration: 12, offsetHours: 6 }
+          ]
+        },
+        {
+          output: 52100, rework: 110, reject: 30, loading: 480,
+          stoppages: [
+            { code: codes.calibration, duration: 10, offsetHours: 1 },
+            { code: codes.airPressureDrop, duration: 15, offsetHours: 3 },
+            { code: codes.minorStoppage, duration: 8, offsetHours: 5 }
+          ]
+        },
+        {
+          output: 32000, rework: 50, reject: 10, loading: 480,
+          stoppages: [
+            { code: codes.calibration, duration: 15, offsetHours: 1 }
+          ],
+          currentState: "RUNNING" // Live running state today
+        }
+      ]
     },
     {
-      okpNumber: "OKP-20260524-01",
-      date: day2,
-      shift: 2,
-      machineId: machines[0].id,
-      productId: products[1].id,
-      groupLeader: "Agus Prasetyo",
-      operator: "Candra Darusman",
-      helper: "Eko Wahyudi",
-      loadingTime: 480.0,
-      totalOutput: 51200.0,
-      rework: 120.0,
-      reject: 35.0,
-      sampleQc: 4.0,
+      // Machine 2: Seaming Line A4 (Mechanical seamer chuck issues)
+      name: "Seaming Line A4",
+      operators: ["Suparno", "Triyono", "Suparno"],
+      helpers: ["Guntur Triaji", "Doni Setiawan", "Eko Wahyudi"],
+      leaders: ["Agus Prasetyo", "Agus Prasetyo", "Yusuf Habibie"],
+      history: [
+        {
+          output: 48450, rework: 70, reject: 15, loading: 480,
+          stoppages: [
+            { code: codes.toolChange, duration: 20, offsetHours: 2 },
+            { code: codes.minorStoppage, duration: 15, offsetHours: 5 }
+          ]
+        },
+        {
+          output: 52050, rework: 100, reject: 25, loading: 480,
+          stoppages: [
+            { code: codes.toolChange, duration: 15, offsetHours: 2 },
+            { code: codes.minorStoppage, duration: 10, offsetHours: 5 }
+          ]
+        },
+        {
+          output: 31950, rework: 45, reject: 8, loading: 480,
+          stoppages: [],
+          currentState: "RUNNING" // Live running state today
+        }
+      ]
     },
     {
-      okpNumber: "OKP-20260525-01",
-      date: day3,
-      shift: 1,
-      machineId: machines[0].id,
-      productId: products[0].id,
-      groupLeader: "Yusuf Habibie",
-      operator: "Feri Irawan",
-      helper: "Guntur Triaji",
-      loadingTime: 480.0,
-      totalOutput: 46100.0,
-      rework: 90.0,
-      reject: 15.0,
-      sampleQc: 6.0,
+      // Machine 3: Cartooning Line A4 (Conveyor jams common)
+      name: "Cartooning Line A4",
+      operators: ["Eko Wahyudi", "Suparno", "Triyono"],
+      helpers: ["Feri Irawan", "Bambang Pamungkas", "Candra Darusman"],
+      leaders: ["Agus Prasetyo", "Agus Prasetyo", "Yusuf Habibie"],
+      history: [
+        {
+          output: 48200, rework: 60, reject: 10, loading: 480,
+          stoppages: [
+            { code: codes.conveyorJam, duration: 35, offsetHours: 3, hasDms: true },
+            { code: codes.minorStoppage, duration: 10, offsetHours: 6 }
+          ]
+        },
+        {
+          output: 51800, rework: 90, reject: 20, loading: 480,
+          stoppages: [
+            { code: codes.conveyorJam, duration: 25, offsetHours: 3, hasDms: true },
+            { code: codes.minorStoppage, duration: 12, offsetHours: 6 }
+          ]
+        },
+        {
+          output: 31500, rework: 40, reject: 5, loading: 480,
+          stoppages: [],
+          currentState: "STOPPED",
+          stopCode: codes.conveyorJam,
+          hasDms: true // Currently stopped on Conveyor Jam breakdown
+        }
+      ]
     },
+    {
+      // Machine 4: Labeling Line A4 (Label roll jams & sensor misalignments)
+      name: "Labeling Line A4",
+      operators: ["Candra Darusman", "Feri Irawan", "Bambang Pamungkas"],
+      helpers: ["Triyono", "Suparno", "Triyono"],
+      leaders: ["Agus Prasetyo", "Agus Prasetyo", "Yusuf Habibie"],
+      history: [
+        {
+          output: 48150, rework: 50, reject: 8, loading: 480,
+          stoppages: [
+            { code: codes.labelJammed, duration: 30, offsetHours: 2, hasDms: true },
+            { code: codes.sensorFault, duration: 10, offsetHours: 5 }
+          ]
+        },
+        {
+          output: 51750, rework: 80, reject: 18, loading: 480,
+          stoppages: [
+            { code: codes.labelJammed, duration: 20, offsetHours: 2, hasDms: true },
+            { code: codes.sensorFault, duration: 8, offsetHours: 5 }
+          ]
+        },
+        {
+          output: 31600, rework: 35, reject: 4, loading: 480,
+          stoppages: [],
+          currentState: "RUNNING" // Live running state today
+        }
+      ]
+    }
   ];
 
-  for (const okpData of okpLogsData) {
-    const okpLog = await prisma.okpLog.create({
-      data: {
-        ...okpData,
-        companyId: company.id,
-      },
-    });
+  const days = [
+    { label: "Day1", date: day1, productIdx: 0, shift: 1 },
+    { label: "Day2", date: day2, productIdx: 1, shift: 2 },
+    { label: "Day3", date: day3, productIdx: 0, shift: 1 },
+  ];
 
-    // Seed activity logs (productive process run & downtime stoppages) for each OKP
-    console.log(`⏱️ Seeding Activity Logs for ${okpLog.okpNumber}...`);
+  for (let mIdx = 0; mIdx < machines.length; mIdx++) {
+    const machine = machines[mIdx];
+    const profile = simulationProfiles.find((p) => p.name === machine.name);
+    console.log(`🤖 Seeding Production Simulation OKPs for Machine: ${machine.name}...`);
 
-    // 1. Process Run (Productive normal run)
-    await prisma.activityLog.create({
-      data: {
-        okpLogId: okpLog.id,
-        activityCodeId: codes.normalRun.id,
-        duration: 410.0, // Productive time
-      },
-    });
+    for (let dIdx = 0; dIdx < days.length; dIdx++) {
+      const dayConfig = days[dIdx];
+      const dataProfile = profile.history[dIdx];
+      const product = products[dayConfig.productIdx];
 
-    // 2. Setup Calibration (15 minutes)
-    await prisma.activityLog.create({
-      data: {
-        okpLogId: okpLog.id,
-        activityCodeId: codes.calibration.id,
-        duration: 15.0,
-        startTime: new Date(okpLog.date.getTime() + 60 * 60 * 1000), // 1 hour after start
-        endTime: new Date(okpLog.date.getTime() + 75 * 60 * 1000),
-      },
-    });
+      // Create OKP Log
+      const okpLog = await prisma.okpLog.create({
+        data: {
+          companyId: company.id,
+          okpNumber: `OKP-${mIdx + 1}-${dayConfig.label}`,
+          date: dayConfig.date,
+          shift: dayConfig.shift,
+          machineId: machine.id,
+          productId: product.id,
+          groupLeader: profile.leaders[dIdx],
+          operator: profile.operators[dIdx],
+          helper: profile.helpers[dIdx],
+          loadingTime: dataProfile.loading,
+          totalOutput: dataProfile.output,
+          rework: dataProfile.rework,
+          reject: dataProfile.reject,
+          sampleQc: dIdx + 4.0,
+        },
+      });
 
-    // 3. Breakdown Mechanical (Conveyor Jammed - 35 minutes)
-    const conveyorStopStart = new Date(okpLog.date.getTime() + 180 * 60 * 1000); // 3 hours after start
-    const conveyorStopEnd = new Date(okpLog.date.getTime() + 215 * 60 * 1000);
-    
-    const conveyorActivity = await prisma.activityLog.create({
-      data: {
-        okpLogId: okpLog.id,
-        activityCodeId: codes.conveyorJam.id,
-        duration: 35.0,
-        startTime: conveyorStopStart,
-        endTime: conveyorStopEnd,
-        brRootCause: "8 Basic Competency - Loose tension chain",
-        brMtdtWaiting: 10.0,
-        brMtdtRepair: 20.0,
-        brMtdtStartup: 5.0,
-      },
-    });
+      // Seeding Stoppages
+      let totalDowntimeMinutes = 0;
+      for (const stop of dataProfile.stoppages) {
+        const startTime = new Date(okpLog.date.getTime() + stop.offsetHours * 60 * 60 * 1000);
+        const endTime = new Date(startTime.getTime() + stop.duration * 60 * 1000);
+        totalDowntimeMinutes += stop.duration;
 
-    // 4. Minor stoppages (10 minutes total across the shift)
-    await prisma.activityLog.create({
-      data: {
-        okpLogId: okpLog.id,
-        activityCodeId: codes.minorStoppage.id,
-        duration: 10.0,
-      },
-    });
+        await prisma.activityLog.create({
+          data: {
+            okpLogId: okpLog.id,
+            activityCodeId: stop.code.id,
+            duration: stop.duration,
+            startTime,
+            endTime,
+            brRootCause: stop.hasDms ? "Auto-Detected via Telemetry" : null,
+          },
+        });
 
-    // Seed Shopfloor Daily Management System Actions for the mechanical breakdowns
-    console.log(`📋 Seeding Shopfloor DMS Actions for ${okpLog.okpNumber}...`);
-    await prisma.dmsAction.create({
-      data: {
-        companyId: company.id,
-        okpLogId: okpLog.id,
-        downtimeCode: "BR.001",
-        actionPlan: "Melakukan penyetelan ulang ketegangan rantai conveyor dan pelumasan bearing outfeed.",
-        pic: "Suparno (Mekanik Line A4)",
-        targetDate: new Date(okpLog.date.getTime() + 24 * 60 * 60 * 1000), // Target next day
-        status: okpLog.okpNumber.includes("0525") ? "OPEN" : "CLOSED", // Today's action is open, past are closed
-      },
-    });
+        // Seed DMS action plan for major breakdowns
+        if (stop.hasDms) {
+          await prisma.dmsAction.create({
+            data: {
+              companyId: company.id,
+              okpLogId: okpLog.id,
+              downtimeCode: stop.code.code.toUpperCase(),
+              actionPlan: `Melakukan pemeriksaan dan perbaikan untuk aktivitas ${stop.code.mainActivity} (${stop.code.subActivity}).`,
+              pic: `${profile.operators[dIdx]} & Teknisi`,
+              targetDate: new Date(okpLog.date.getTime() + 24 * 60 * 60 * 1000),
+              status: dIdx === 2 ? "OPEN" : "CLOSED", // Today's is open, historical are closed
+            },
+          });
+        }
+      }
+
+      // Seeding Process Run (PR)
+      if (dIdx === 2) {
+        // Today (Day 3) - Depends on current state
+        if (dataProfile.currentState === "RUNNING") {
+          // Live Running: Open Normal Run Log
+          await prisma.activityLog.create({
+            data: {
+              okpLogId: okpLog.id,
+              activityCodeId: codes.normalRun.id,
+              duration: 0.0,
+              startTime: new Date(),
+              endTime: null,
+            },
+          });
+        } else {
+          // Live Stopped: Open Breakdown Log
+          const stopCode = dataProfile.stopCode || codes.conveyorJam;
+          const openLog = await prisma.activityLog.create({
+            data: {
+              okpLogId: okpLog.id,
+              activityCodeId: stopCode.id,
+              duration: 0.0,
+              startTime: new Date(Date.now() - 30 * 60 * 1000), // Stopped 30 mins ago
+              endTime: null,
+              brRootCause: "Auto-Detected via Telemetry",
+            },
+          });
+
+          if (dataProfile.hasDms) {
+            await prisma.dmsAction.create({
+              data: {
+                companyId: company.id,
+                okpLogId: okpLog.id,
+                downtimeCode: stopCode.code.toUpperCase(),
+                actionPlan: `Periksa ketegangan atau sensor pada ${machine.name}.`,
+                pic: `${profile.operators[dIdx]} (Operator)`,
+                targetDate: new Date(),
+                status: "OPEN",
+              },
+            });
+          }
+        }
+      } else {
+        // Historical Day 1 & Day 2: Closed Process Run
+        const productiveMinutes = dataProfile.loading - totalDowntimeMinutes;
+        await prisma.activityLog.create({
+          data: {
+            okpLogId: okpLog.id,
+            activityCodeId: codes.normalRun.id,
+            duration: productiveMinutes,
+            startTime: okpLog.date,
+            endTime: new Date(okpLog.date.getTime() + productiveMinutes * 60 * 1000),
+          },
+        });
+      }
+
+      // Recalculate OEE
+      await recalculateOkpLogOee(okpLog.id, prisma);
+    }
   }
 
-  console.log("🎉 Database seeded successfully! Happy Coding!");
+  console.log("🎉 Real-world simulation database seeded successfully!");
 }
 
 main()

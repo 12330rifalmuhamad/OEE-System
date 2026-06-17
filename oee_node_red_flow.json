@@ -1,0 +1,1435 @@
+  [
+    {
+      "id": "oee_sim_tab",
+      "type": "tab",
+      "label": "OEE 5-Machine Line Simulation",
+      "disabled": false,
+      "info": "Simulasi 5 Mesin pada Lini Produksi A4 dengan keluaran Status (1/0) dan Counter (1)."
+    },
+    {
+      "id": "mqtt_local_broker",
+      "type": "mqtt-broker",
+      "name": "HiveMQ Public Broker",
+      "broker": "broker.hivemq.com",
+      "port": "1883",
+      "clientid": "",
+      "autoConnect": true,
+      "usetls": false,
+      "protocolVersion": "4",
+      "keepalive": "60",
+      "cleansession": true,
+      "birthTopic": "",
+      "birthQos": "0",
+      "birthPayload": "",
+      "closeTopic": "",
+      "closeQos": "0",
+      "closePayload": "",
+      "willTopic": "",
+      "willQos": "0",
+      "willPayload": ""
+    },
+    {
+      "id": "m1_auto_status",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Filling Machine (M1) Auto Status",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": true,
+      "onceDelay": "1",
+      "topic": "",
+      "payloadType": "date",
+      "x": 160,
+      "y": 100,
+      "wires": [
+        [
+          "m1_status_func"
+        ]
+      ]
+    },
+    {
+      "id": "m1_status_func",
+      "type": "function",
+      "z": "oee_sim_tab",
+      "name": "Status Decider",
+      "func": "let currentStatus = flow.get('m1_status') !== undefined ? flow.get('m1_status') : 1;\n// 10% chance to toggle state\nif (Math.random() < 0.10) {\n    currentStatus = currentStatus === 1 ? 0 : 1;\n}\nflow.set('m1_status', currentStatus);\nmsg.payload = currentStatus;\nreturn msg;",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 410,
+      "y": 100,
+      "wires": [
+        [
+          "m1_mqtt_status",
+          "m1_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m1_inject_run",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "RUN (1)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "1",
+      "payloadType": "num",
+      "x": 160,
+      "y": 160,
+      "wires": [
+        [
+          "m1_set_run"
+        ]
+      ]
+    },
+    {
+      "id": "m1_set_run",
+      "type": "change",
+      "z": "oee_sim_tab",
+      "name": "Set Status = 1",
+      "rules": [
+        {
+          "t": "set",
+          "p": "m1_status",
+          "pt": "flow",
+          "to": "1",
+          "tot": "num"
+        },
+        {
+          "t": "set",
+          "p": "payload",
+          "pt": "msg",
+          "to": "1",
+          "tot": "num"
+        }
+      ],
+      "action": "",
+      "property": "",
+      "from": "",
+      "to": "",
+      "reg": false,
+      "x": 410,
+      "y": 160,
+      "wires": [
+        [
+          "m1_mqtt_status",
+          "m1_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m1_inject_stop",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP (0)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "0",
+      "payloadType": "num",
+      "x": 160,
+      "y": 220,
+      "wires": [
+        [
+          "m1_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m1_set_stop",
+      "type": "change",
+      "z": "oee_sim_tab",
+      "name": "Set Status = 0",
+      "rules": [
+        {
+          "t": "set",
+          "p": "m1_status",
+          "pt": "flow",
+          "to": "0",
+          "tot": "num"
+        }
+      ],
+      "action": "",
+      "property": "",
+      "from": "",
+      "to": "",
+      "reg": false,
+      "x": 410,
+      "y": 220,
+      "wires": [
+        [
+          "m1_mqtt_status",
+          "m1_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m1_mqtt_status",
+      "type": "mqtt out",
+      "z": "oee_sim_tab",
+      "name": "MQTT Status",
+      "topic": "kmi/rifdiansyah_oee/lineA4/machine1/status",
+      "qos": "0",
+      "retain": "false",
+      "respTopic": "",
+      "contentType": "",
+      "userProps": "",
+      "correl": "",
+      "expiry": "",
+      "broker": "mqtt_local_broker",
+      "x": 690,
+      "y": 160,
+      "wires": []
+    },
+    {
+      "id": "m1_counter_trigger",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Auto Production Pulse",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "2.5",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payloadType": "date",
+      "x": 170,
+      "y": 280,
+      "wires": [
+        [
+          "m1_counter_gate"
+        ]
+      ]
+    },
+    {
+      "id": "m1_counter_gate",
+      "type": "function",
+      "z": "oee_sim_tab",
+      "name": "Allow if RUN",
+      "func": "const status = flow.get('m1_status') !== undefined ? flow.get('m1_status') : 1;\nif (status === 1) {\n    msg.payload = 1; // Counter increment by 1\n    return msg;\n}\nreturn null; // Block if STOP (0)",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 410,
+      "y": 280,
+      "wires": [
+        [
+          "m1_mqtt_counter",
+          "m1_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m1_mqtt_counter",
+      "type": "mqtt out",
+      "z": "oee_sim_tab",
+      "name": "MQTT Counter",
+      "topic": "kmi/rifdiansyah_oee/lineA4/machine1/counter",
+      "qos": "0",
+      "retain": "false",
+      "respTopic": "",
+      "contentType": "",
+      "userProps": "",
+      "correl": "",
+      "expiry": "",
+      "broker": "mqtt_local_broker",
+      "x": 690,
+      "y": 280,
+      "wires": []
+    },
+    {
+      "id": "m1_debug",
+      "type": "debug",
+      "z": "oee_sim_tab",
+      "name": "Debug",
+      "active": false,
+      "tosidebar": true,
+      "console": false,
+      "tostatus": false,
+      "complete": "payload",
+      "targetType": "msg",
+      "statusVal": "",
+      "statusType": "auto",
+      "x": 680,
+      "y": 100,
+      "wires": []
+    },
+    {
+      "id": "m2_auto_status",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Seaming Machine (M2) Auto Status",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": true,
+      "onceDelay": "3",
+      "topic": "",
+      "payloadType": "date",
+      "x": 160,
+      "y": 400,
+      "wires": [
+        [
+          "m2_status_func"
+        ]
+      ]
+    },
+    {
+      "id": "m2_status_func",
+      "type": "function",
+      "z": "oee_sim_tab",
+      "name": "Status Decider",
+      "func": "let currentStatus = flow.get('m2_status') !== undefined ? flow.get('m2_status') : 1;\n// 10% chance to toggle state\nif (Math.random() < 0.10) {\n    currentStatus = currentStatus === 1 ? 0 : 1;\n}\nflow.set('m2_status', currentStatus);\nmsg.payload = currentStatus;\nreturn msg;",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 410,
+      "y": 400,
+      "wires": [
+        [
+          "m2_mqtt_status",
+          "m2_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m2_inject_run",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "RUN (1)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "1",
+      "payloadType": "num",
+      "x": 160,
+      "y": 460,
+      "wires": [
+        [
+          "m2_set_run"
+        ]
+      ]
+    },
+    {
+      "id": "m2_set_run",
+      "type": "change",
+      "z": "oee_sim_tab",
+      "name": "Set Status = 1",
+      "rules": [
+        {
+          "t": "set",
+          "p": "m2_status",
+          "pt": "flow",
+          "to": "1",
+          "tot": "num"
+        },
+        {
+          "t": "set",
+          "p": "payload",
+          "pt": "msg",
+          "to": "1",
+          "tot": "num"
+        }
+      ],
+      "action": "",
+      "property": "",
+      "from": "",
+      "to": "",
+      "reg": false,
+      "x": 410,
+      "y": 460,
+      "wires": [
+        [
+          "m2_mqtt_status",
+          "m2_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m2_inject_stop",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP (0)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "0",
+      "payloadType": "num",
+      "x": 160,
+      "y": 520,
+      "wires": [
+        [
+          "m2_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m2_set_stop",
+      "type": "change",
+      "z": "oee_sim_tab",
+      "name": "Set Status = 0",
+      "rules": [
+        {
+          "t": "set",
+          "p": "m2_status",
+          "pt": "flow",
+          "to": "0",
+          "tot": "num"
+        }
+      ],
+      "action": "",
+      "property": "",
+      "from": "",
+      "to": "",
+      "reg": false,
+      "x": 410,
+      "y": 520,
+      "wires": [
+        [
+          "m2_mqtt_status",
+          "m2_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m2_mqtt_status",
+      "type": "mqtt out",
+      "z": "oee_sim_tab",
+      "name": "MQTT Status",
+      "topic": "kmi/rifdiansyah_oee/lineA4/machine2/status",
+      "qos": "0",
+      "retain": "false",
+      "respTopic": "",
+      "contentType": "",
+      "userProps": "",
+      "correl": "",
+      "expiry": "",
+      "broker": "mqtt_local_broker",
+      "x": 690,
+      "y": 460,
+      "wires": []
+    },
+    {
+      "id": "m2_counter_trigger",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Auto Production Pulse",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "2.5",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payloadType": "date",
+      "x": 170,
+      "y": 580,
+      "wires": [
+        [
+          "m2_counter_gate"
+        ]
+      ]
+    },
+    {
+      "id": "m2_counter_gate",
+      "type": "function",
+      "z": "oee_sim_tab",
+      "name": "Allow if RUN",
+      "func": "const status = flow.get('m2_status') !== undefined ? flow.get('m2_status') : 1;\nif (status === 1) {\n    msg.payload = 1; // Counter increment by 1\n    return msg;\n}\nreturn null; // Block if STOP (0)",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 410,
+      "y": 580,
+      "wires": [
+        [
+          "m2_mqtt_counter",
+          "m2_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m2_mqtt_counter",
+      "type": "mqtt out",
+      "z": "oee_sim_tab",
+      "name": "MQTT Counter",
+      "topic": "kmi/rifdiansyah_oee/lineA4/machine2/counter",
+      "qos": "0",
+      "retain": "false",
+      "respTopic": "",
+      "contentType": "",
+      "userProps": "",
+      "correl": "",
+      "expiry": "",
+      "broker": "mqtt_local_broker",
+      "x": 690,
+      "y": 580,
+      "wires": []
+    },
+    {
+      "id": "m2_debug",
+      "type": "debug",
+      "z": "oee_sim_tab",
+      "name": "Debug",
+      "active": false,
+      "tosidebar": true,
+      "console": false,
+      "tostatus": false,
+      "complete": "payload",
+      "targetType": "msg",
+      "statusVal": "",
+      "statusType": "auto",
+      "x": 680,
+      "y": 400,
+      "wires": []
+    },
+    {
+      "id": "m3_auto_status",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Cartooning Machine (M3) Auto Status",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": true,
+      "onceDelay": "5",
+      "topic": "",
+      "payloadType": "date",
+      "x": 160,
+      "y": 700,
+      "wires": [
+        [
+          "m3_status_func"
+        ]
+      ]
+    },
+    {
+      "id": "m3_status_func",
+      "type": "function",
+      "z": "oee_sim_tab",
+      "name": "Status Decider",
+      "func": "let currentStatus = flow.get('m3_status') !== undefined ? flow.get('m3_status') : 1;\n// 10% chance to toggle state\nif (Math.random() < 0.10) {\n    currentStatus = currentStatus === 1 ? 0 : 1;\n}\nflow.set('m3_status', currentStatus);\nmsg.payload = currentStatus;\nreturn msg;",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 410,
+      "y": 700,
+      "wires": [
+        [
+          "m3_mqtt_status",
+          "m3_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m3_inject_run",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "RUN (1)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "1",
+      "payloadType": "num",
+      "x": 160,
+      "y": 760,
+      "wires": [
+        [
+          "m3_set_run"
+        ]
+      ]
+    },
+    {
+      "id": "m3_set_run",
+      "type": "change",
+      "z": "oee_sim_tab",
+      "name": "Set Status = 1",
+      "rules": [
+        {
+          "t": "set",
+          "p": "m3_status",
+          "pt": "flow",
+          "to": "1",
+          "tot": "num"
+        },
+        {
+          "t": "set",
+          "p": "payload",
+          "pt": "msg",
+          "to": "1",
+          "tot": "num"
+        }
+      ],
+      "action": "",
+      "property": "",
+      "from": "",
+      "to": "",
+      "reg": false,
+      "x": 410,
+      "y": 760,
+      "wires": [
+        [
+          "m3_mqtt_status",
+          "m3_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m3_inject_stop",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP (0)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "0",
+      "payloadType": "num",
+      "x": 160,
+      "y": 820,
+      "wires": [
+        [
+          "m3_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m3_set_stop",
+      "type": "change",
+      "z": "oee_sim_tab",
+      "name": "Set Status = 0",
+      "rules": [
+        {
+          "t": "set",
+          "p": "m3_status",
+          "pt": "flow",
+          "to": "0",
+          "tot": "num"
+        }
+      ],
+      "action": "",
+      "property": "",
+      "from": "",
+      "to": "",
+      "reg": false,
+      "x": 410,
+      "y": 820,
+      "wires": [
+        [
+          "m3_mqtt_status",
+          "m3_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m3_mqtt_status",
+      "type": "mqtt out",
+      "z": "oee_sim_tab",
+      "name": "MQTT Status",
+      "topic": "kmi/rifdiansyah_oee/lineA4/machine3/status",
+      "qos": "0",
+      "retain": "false",
+      "respTopic": "",
+      "contentType": "",
+      "userProps": "",
+      "correl": "",
+      "expiry": "",
+      "broker": "mqtt_local_broker",
+      "x": 690,
+      "y": 760,
+      "wires": []
+    },
+    {
+      "id": "m3_counter_trigger",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Auto Production Pulse",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "2.5",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payloadType": "date",
+      "x": 170,
+      "y": 880,
+      "wires": [
+        [
+          "m3_counter_gate"
+        ]
+      ]
+    },
+    {
+      "id": "m3_counter_gate",
+      "type": "function",
+      "z": "oee_sim_tab",
+      "name": "Allow if RUN",
+      "func": "const status = flow.get('m3_status') !== undefined ? flow.get('m3_status') : 1;\nif (status === 1) {\n    msg.payload = 1; // Counter increment by 1\n    return msg;\n}\nreturn null; // Block if STOP (0)",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 410,
+      "y": 880,
+      "wires": [
+        [
+          "m3_mqtt_counter",
+          "m3_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m3_mqtt_counter",
+      "type": "mqtt out",
+      "z": "oee_sim_tab",
+      "name": "MQTT Counter",
+      "topic": "kmi/rifdiansyah_oee/lineA4/machine3/counter",
+      "qos": "0",
+      "retain": "false",
+      "respTopic": "",
+      "contentType": "",
+      "userProps": "",
+      "correl": "",
+      "expiry": "",
+      "broker": "mqtt_local_broker",
+      "x": 690,
+      "y": 880,
+      "wires": []
+    },
+    {
+      "id": "m3_debug",
+      "type": "debug",
+      "z": "oee_sim_tab",
+      "name": "Debug",
+      "active": false,
+      "tosidebar": true,
+      "console": false,
+      "tostatus": false,
+      "complete": "payload",
+      "targetType": "msg",
+      "statusVal": "",
+      "statusType": "auto",
+      "x": 680,
+      "y": 700,
+      "wires": []
+    },
+    {
+      "id": "m4_auto_status",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Labeling Machine (M4) Auto Status",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": true,
+      "onceDelay": "7",
+      "topic": "",
+      "payloadType": "date",
+      "x": 160,
+      "y": 1000,
+      "wires": [
+        [
+          "m4_status_func"
+        ]
+      ]
+    },
+    {
+      "id": "m4_status_func",
+      "type": "function",
+      "z": "oee_sim_tab",
+      "name": "Status Decider",
+      "func": "let currentStatus = flow.get('m4_status') !== undefined ? flow.get('m4_status') : 1;\n// 10% chance to toggle state\nif (Math.random() < 0.10) {\n    currentStatus = currentStatus === 1 ? 0 : 1;\n}\nflow.set('m4_status', currentStatus);\nmsg.payload = currentStatus;\nreturn msg;",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 410,
+      "y": 1000,
+      "wires": [
+        [
+          "m4_mqtt_status",
+          "m4_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m4_inject_run",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "RUN (1)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "1",
+      "payloadType": "num",
+      "x": 160,
+      "y": 1060,
+      "wires": [
+        [
+          "m4_set_run"
+        ]
+      ]
+    },
+    {
+      "id": "m4_set_run",
+      "type": "change",
+      "z": "oee_sim_tab",
+      "name": "Set Status = 1",
+      "rules": [
+        {
+          "t": "set",
+          "p": "m4_status",
+          "pt": "flow",
+          "to": "1",
+          "tot": "num"
+        },
+        {
+          "t": "set",
+          "p": "payload",
+          "pt": "msg",
+          "to": "1",
+          "tot": "num"
+        }
+      ],
+      "action": "",
+      "property": "",
+      "from": "",
+      "to": "",
+      "reg": false,
+      "x": 410,
+      "y": 1060,
+      "wires": [
+        [
+          "m4_mqtt_status",
+          "m4_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m4_inject_stop",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP (0)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "0",
+      "payloadType": "num",
+      "x": 160,
+      "y": 1120,
+      "wires": [
+        [
+          "m4_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m4_set_stop",
+      "type": "change",
+      "z": "oee_sim_tab",
+      "name": "Set Status = 0",
+      "rules": [
+        {
+          "t": "set",
+          "p": "m4_status",
+          "pt": "flow",
+          "to": "0",
+          "tot": "num"
+        }
+      ],
+      "action": "",
+      "property": "",
+      "from": "",
+      "to": "",
+      "reg": false,
+      "x": 410,
+      "y": 1120,
+      "wires": [
+        [
+          "m4_mqtt_status",
+          "m4_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m4_mqtt_status",
+      "type": "mqtt out",
+      "z": "oee_sim_tab",
+      "name": "MQTT Status",
+      "topic": "kmi/rifdiansyah_oee/lineA4/machine4/status",
+      "qos": "0",
+      "retain": "false",
+      "respTopic": "",
+      "contentType": "",
+      "userProps": "",
+      "correl": "",
+      "expiry": "",
+      "broker": "mqtt_local_broker",
+      "x": 690,
+      "y": 1060,
+      "wires": []
+    },
+    {
+      "id": "m4_counter_trigger",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Auto Production Pulse",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "2.5",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payloadType": "date",
+      "x": 170,
+      "y": 1180,
+      "wires": [
+        [
+          "m4_counter_gate"
+        ]
+      ]
+    },
+    {
+      "id": "m4_counter_gate",
+      "type": "function",
+      "z": "oee_sim_tab",
+      "name": "Allow if RUN",
+      "func": "const status = flow.get('m4_status') !== undefined ? flow.get('m4_status') : 1;\nif (status === 1) {\n    msg.payload = 1; // Counter increment by 1\n    return msg;\n}\nreturn null; // Block if STOP (0)",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 410,
+      "y": 1180,
+      "wires": [
+        [
+          "m4_mqtt_counter",
+          "m4_debug"
+        ]
+      ]
+    },
+    {
+      "id": "m4_mqtt_counter",
+      "type": "mqtt out",
+      "z": "oee_sim_tab",
+      "name": "MQTT Counter",
+      "topic": "kmi/rifdiansyah_oee/lineA4/machine4/counter",
+      "qos": "0",
+      "retain": "false",
+      "respTopic": "",
+      "contentType": "",
+      "userProps": "",
+      "correl": "",
+      "expiry": "",
+      "broker": "mqtt_local_broker",
+      "x": 690,
+      "y": 1180,
+      "wires": []
+    },
+    {
+      "id": "m4_debug",
+      "type": "debug",
+      "z": "oee_sim_tab",
+      "name": "Debug",
+      "active": false,
+      "tosidebar": true,
+      "console": false,
+      "tostatus": false,
+      "complete": "payload",
+      "targetType": "msg",
+      "statusVal": "",
+      "statusType": "auto",
+      "x": 680,
+      "y": 1000,
+      "wires": []
+    },
+    {
+      "id": "okp_initiate_http_request",
+      "type": "http request",
+      "z": "oee_sim_tab",
+      "name": "Call Initiate API",
+      "method": "POST",
+      "ret": "obj",
+      "url": "http://localhost:5001/api/transactions/okp/initiate",
+      "tls": "",
+      "persist": false,
+      "proxy": "",
+      "insecureHTTPParser": false,
+      "authType": "",
+      "x": 410,
+      "y": 1650,
+      "wires": [
+        [
+          "okp_initiate_debug"
+        ]
+      ]
+    },
+    {
+      "id": "okp_initiate_debug",
+      "type": "debug",
+      "z": "oee_sim_tab",
+      "name": "API Response",
+      "active": true,
+      "tosidebar": true,
+      "console": false,
+      "tostatus": false,
+      "complete": "payload",
+      "targetType": "msg",
+      "statusVal": "",
+      "statusType": "auto",
+      "x": 690,
+      "y": 1650,
+      "wires": []
+    },
+    {
+      "id": "m1_initiate_inject",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Initiate Filling Machine (M1) OKP",
+      "props": [
+        {
+          "p": "payload",
+          "v": "{\"okpNumber\":\"OKP-NODERED-M1\",\"machineName\":\"Filling Line A4\",\"productCode\":\"CHIL-KID-800\",\"shift\":1,\"groupLeader\":\"Yusuf NR\",\"operator\":\"Suparno NR\",\"helper\":\"Eko NR\",\"loadingTime\":480}",
+          "vt": "json"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "x": 160,
+      "y": 1530,
+      "wires": [
+        [
+          "okp_initiate_http_request"
+        ]
+      ]
+    },
+    {
+      "id": "m2_initiate_inject",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Initiate Seaming Machine (M2) OKP",
+      "props": [
+        {
+          "p": "payload",
+          "v": "{\"okpNumber\":\"OKP-NODERED-M2\",\"machineName\":\"Seaming Line A4\",\"productCode\":\"CHIL-KID-800\",\"shift\":1,\"groupLeader\":\"Yusuf NR\",\"operator\":\"Suparno NR\",\"helper\":\"Eko NR\",\"loadingTime\":480}",
+          "vt": "json"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "x": 160,
+      "y": 1590,
+      "wires": [
+        [
+          "okp_initiate_http_request"
+        ]
+      ]
+    },
+    {
+      "id": "m3_initiate_inject",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Initiate Cartooning Machine (M3) OKP",
+      "props": [
+        {
+          "p": "payload",
+          "v": "{\"okpNumber\":\"OKP-NODERED-M3\",\"machineName\":\"Cartooning Line A4\",\"productCode\":\"CHIL-KID-800\",\"shift\":1,\"groupLeader\":\"Yusuf NR\",\"operator\":\"Suparno NR\",\"helper\":\"Eko NR\",\"loadingTime\":480}",
+          "vt": "json"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "x": 160,
+      "y": 1650,
+      "wires": [
+        [
+          "okp_initiate_http_request"
+        ]
+      ]
+    },
+    {
+      "id": "m4_initiate_inject",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Initiate Labeling Machine (M4) OKP",
+      "props": [
+        {
+          "p": "payload",
+          "v": "{\"okpNumber\":\"OKP-NODERED-M4\",\"machineName\":\"Labeling Line A4\",\"productCode\":\"CHIL-KID-800\",\"shift\":1,\"groupLeader\":\"Yusuf NR\",\"operator\":\"Suparno NR\",\"helper\":\"Eko NR\",\"loadingTime\":480}",
+          "vt": "json"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "x": 160,
+      "y": 1710,
+      "wires": [
+        [
+          "okp_initiate_http_request"
+        ]
+      ]
+    },
+    {
+      "id": "m1_inject_br_1",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP: Conveyor Jam (br.1)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "br.1",
+      "payloadType": "str",
+      "x": 160,
+      "y": 320,
+      "wires": [
+        [
+          "m1_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m1_inject_br_3",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP: Air Pressure Drop (br.3)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "br.3",
+      "payloadType": "str",
+      "x": 160,
+      "y": 350,
+      "wires": [
+        [
+          "m1_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m1_inject_ot_1",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP: Wait Material (ot.1)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "ot.1",
+      "payloadType": "str",
+      "x": 160,
+      "y": 380,
+      "wires": [
+        [
+          "m1_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m2_inject_se_2",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP: Tool Chuck Change (se.2)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "se.2",
+      "payloadType": "str",
+      "x": 160,
+      "y": 620,
+      "wires": [
+        [
+          "m2_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m2_inject_br_3",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP: Air Pressure Drop (br.3)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "br.3",
+      "payloadType": "str",
+      "x": 160,
+      "y": 650,
+      "wires": [
+        [
+          "m2_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m2_inject_br_1",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP: Conveyor Jam (br.1)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "br.1",
+      "payloadType": "str",
+      "x": 160,
+      "y": 680,
+      "wires": [
+        [
+          "m2_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m3_inject_br_1",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP: Conveyor Jam (br.1)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "br.1",
+      "payloadType": "str",
+      "x": 160,
+      "y": 920,
+      "wires": [
+        [
+          "m3_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m3_inject_br_2",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP: Sensor Fault (br.2)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "br.2",
+      "payloadType": "str",
+      "x": 160,
+      "y": 950,
+      "wires": [
+        [
+          "m3_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m4_inject_br_4",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP: Label Jammed (br.4)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "br.4",
+      "payloadType": "str",
+      "x": 160,
+      "y": 1220,
+      "wires": [
+        [
+          "m4_set_stop"
+        ]
+      ]
+    },
+    {
+      "id": "m4_inject_br_2",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "STOP: Sensor Fault (br.2)",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payload": "br.2",
+      "payloadType": "str",
+      "x": 160,
+      "y": 1250,
+      "wires": [
+        [
+          "m4_set_stop"
+        ]
+      ]
+    }
+  ]

@@ -17,20 +17,26 @@ const PORT = process.env.PORT || 5001;
 // CORS configuration (allow frontend credentials to support cookie session transmission)
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000", 
-      "http://127.0.0.1:3000", 
-      "http://localhost:3001", 
-      "http://127.0.0.1:3001",
-      "http://localhost:3002",
-      "http://127.0.0.1:3002"
-    ],
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      const isLocal =
+        origin.includes("localhost") ||
+        origin.includes("127.0.0.1") ||
+        origin.startsWith("http://192.168.") ||
+        origin.startsWith("http://10.") ||
+        origin.startsWith("http://172.");
+      if (isLocal) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
 // Root endpoint for simple health-check

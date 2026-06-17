@@ -13,7 +13,7 @@ datasource db {
 // 1. DATA PLATFORM UTAMA (MULTI-TENANT)
 model Company {
   id             Int       @id @default(autoincrement()) @map("intCompany_ID")
-  name           String    @map("txtName")    // Nama Pabrik / Perusahaan
+  name           String    @map("txtCompanyName")    // Nama Pabrik / Perusahaan
   subscription   String    @map("txtSubscription")    // Misal: "FREE", "PRO", "ENTERPRISE"
   
   // Relasi: Satu perusahaan memiliki banyak...
@@ -28,6 +28,8 @@ model Company {
   
   createdAt      DateTime  @default(now()) @map("dtmCreatedAt")
   updatedAt      DateTime  @updatedAt @map("dtmUpdatedAt")
+  createdBy      String?   @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy      String?   @default("SYSTEM") @map("txtUpdatedBy")
   lineProcesses  LineProcess[]
 
   @@map("mCompany")
@@ -44,6 +46,8 @@ model User {
 
   createdAt  DateTime @default(now()) @map("dtmCreatedAt")
   updatedAt  DateTime @updatedAt @map("dtmUpdatedAt")
+  createdBy  String?  @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy  String?  @default("SYSTEM") @map("txtUpdatedBy")
 
   @@map("mUser")
 }
@@ -54,6 +58,11 @@ model ActivityCategory {
   code        String         @unique @map("txtCode") // "PR", "SH", "BR", "SE", "MI", "CT", "OT", "ST"
   name        String         @map("txtName")
   activities  ActivityCode[]
+
+  createdAt  DateTime @default(now()) @map("dtmCreatedAt")
+  updatedAt  DateTime @updatedAt @map("dtmUpdatedAt")
+  createdBy  String?  @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy  String?  @default("SYSTEM") @map("txtUpdatedBy")
 
   @@map("mActivityCategory")
 }
@@ -74,6 +83,11 @@ model ActivityCode {
   
   logs            ActivityLog[]
 
+  createdAt  DateTime @default(now()) @map("dtmCreatedAt")
+  updatedAt  DateTime @updatedAt @map("dtmUpdatedAt")
+  createdBy  String?  @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy  String?  @default("SYSTEM") @map("txtUpdatedBy")
+
   @@map("mActivityCode")
 }
 
@@ -81,11 +95,16 @@ model Machine {
   id             Int          @id @default(autoincrement()) @map("intMachine_ID")
   companyId      Int          @map("intCompany_ID")
   company        Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name           String       @map("txtName")
+  name           String       @map("txtMachineName")
   okpLogs        OkpLog[]
   mqttConfig     MqttConfig?
   lineProcessId  Int?         @map("intLineProcess_ID")
   lineProcess    LineProcess? @relation(fields: [lineProcessId], references: [id], onDelete: SetNull)
+
+  createdAt  DateTime @default(now()) @map("dtmCreatedAt")
+  updatedAt  DateTime @updatedAt @map("dtmUpdatedAt")
+  createdBy  String?  @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy  String?  @default("SYSTEM") @map("txtUpdatedBy")
 
   @@map("mMachine")
 }
@@ -95,10 +114,15 @@ model Product {
   companyId    Int      @map("intCompany_ID")
   company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   productCode  String?  @map("txtProductCode") // Kode Produk dari ERP/Oracle
-  name         String   @map("txtName") // Nama Produk
-  size         String?  @map("txtSize") // Ukuran (Misal: 800gr)
-  standarSpeed Float    @map("fltStandarSpeed") // pcs/menit
+  name         String   @map("txtProductName") // Nama Produk
+  size         String?  @map("txtProductSize") // Ukuran (Misal: 800gr)
+  standarSpeed Float    @map("fltStandardSpeed") // pcs/menit
   okpLogs      OkpLog[]
+
+  createdAt  DateTime @default(now()) @map("dtmCreatedAt")
+  updatedAt  DateTime @updatedAt @map("dtmUpdatedAt")
+  createdBy  String?  @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy  String?  @default("SYSTEM") @map("txtUpdatedBy")
 
   @@map("mProduct")
 }
@@ -129,11 +153,21 @@ model OkpLog {
   reject       Float    @map("fltReject") // (Kg / Pcs)
   sampleQc     Float?   @map("fltSampleQc") // (FB)
 
+  // Physical OEE calculation columns
+  availability Float?   @map("decAvailability")
+  performance  Float?   @map("decPerformance")
+  quality      Float?   @map("decQuality")
+  oee          Float?   @map("decOEE")
+  downtime     Float?   @map("decDowntime")
+  mi           Float?   @map("decMI")
+
   activities   ActivityLog[]
   dmsActions   DmsAction[]
   
   createdAt    DateTime @default(now()) @map("dtmCreatedAt")
   updatedAt    DateTime @updatedAt @map("dtmUpdatedAt")
+  createdBy    String?  @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy    String?  @default("SYSTEM") @map("txtUpdatedBy")
 
   @@unique([companyId, okpNumber]) // Satu OKP Number harus unik di dalam satu Company
   @@map("trOkpLog")
@@ -158,6 +192,11 @@ model ActivityLog {
   brMtdtRepair   Float?       @map("fltBrMtdtRepair") // Menit Perbaikan
   brMtdtStartup  Float?       @map("fltBrMtdtStartup") // Menit Start Up / Trial
 
+  createdAt  DateTime @default(now()) @map("dtmCreatedAt")
+  updatedAt  DateTime @updatedAt @map("dtmUpdatedAt")
+  createdBy  String?  @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy  String?  @default("SYSTEM") @map("txtUpdatedBy")
+
   @@map("trActivityLog")
 }
 
@@ -174,6 +213,8 @@ model KpiTarget {
   
   createdAt    DateTime @default(now()) @map("dtmCreatedAt")
   updatedAt    DateTime @updatedAt @map("dtmUpdatedAt")
+  createdBy    String?  @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy    String?  @default("SYSTEM") @map("txtUpdatedBy")
 
   @@map("mKpiTarget")
 }
@@ -194,6 +235,8 @@ model DmsAction {
   
   createdAt    DateTime  @default(now()) @map("dtmCreatedAt")
   updatedAt    DateTime  @updatedAt @map("dtmUpdatedAt")
+  createdBy    String?   @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy    String?   @default("SYSTEM") @map("txtUpdatedBy")
 
   @@map("trDmsAction")
 }
@@ -220,10 +263,12 @@ model MqttConfig {
   statusTopic     String?  @map("txtStatusTopic") // Topic untuk status mesin (misal: "kmi/lineA4/status")
   statusJsonPath  String?  @map("txtStatusJsonPath") // JSON Path jika payload berupa JSON Object (misal: "$.state")
   statusRunValue  String   @default("RUN") @map("txtStatusRunValue") // Nilai penanda Running (misal: "1" atau "RUN")
-  statusStopValue String   @default("STOP") @map("txtStatusStopValue") // Nilai penanda Stopped (misal: "0" atau "STOP")
+  statusStopValue String   @default("STOP") @map("txtStatusStopValue") // Nilai penanda Stopped (misal: "0" or "STOP")
   
   createdAt       DateTime @default(now()) @map("dtmCreatedAt")
   updatedAt       DateTime @updatedAt @map("dtmUpdatedAt")
+  createdBy       String?  @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy       String?  @default("SYSTEM") @map("txtUpdatedBy")
 
   @@map("mMqttConfig")
 }
@@ -233,10 +278,12 @@ model LineProcess {
   id         Int       @id @default(autoincrement()) @map("intLineProcess_ID")
   companyId  Int       @map("intCompany_ID")
   company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name       String    @map("txtName")
+  name       String    @map("txtLineProcessName")
   machines   Machine[]
   createdAt  DateTime  @default(now()) @map("dtmCreatedAt")
   updatedAt  DateTime  @updatedAt @map("dtmUpdatedAt")
+  createdBy  String?   @default("SYSTEM") @map("txtCreatedBy")
+  updatedBy  String?   @default("SYSTEM") @map("txtUpdatedBy")
 
   @@map("mLineProcess")
 }

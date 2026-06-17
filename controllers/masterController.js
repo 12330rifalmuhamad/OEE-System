@@ -1,6 +1,6 @@
 const { db } = require("../lib/db");
 const { hashPassword } = require("../lib/auth");
-const { initMqttListeners } = require("../lib/mqttListener");
+const { initMqttListeners, activeClients } = require("../lib/mqttListener");
 
 // ==========================================
 // 1. MACHINES CRUD
@@ -437,7 +437,18 @@ async function getMqttConfigs(req, res) {
       },
       orderBy: { createdAt: "desc" }
     });
-    return res.json({ mqttConfigs: configs });
+
+    const enrichedConfigs = configs.map((config) => {
+      const client = activeClients[config.machineId];
+      const isConnected = client && client.connected ? 1 : 0;
+
+      return {
+        ...config,
+        status: isConnected
+      };
+    });
+
+    return res.json({ mqttConfigs: enrichedConfigs });
   } catch (error) {
     console.error("GET MQTT Configs Error:", error);
     return res.status(500).json({ error: "Gagal mengambil data konfigurasi MQTT." });

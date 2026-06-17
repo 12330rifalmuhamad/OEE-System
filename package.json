@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "reset-oee": "node reset-oee.js"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
@@ -15,8 +16,10 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.16.0",
+    "mosquitto": "^1.1.0",
     "mqtt": "^5.15.1",
     "next": "16.2.6",
+    "node-red": "^4.1.10",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

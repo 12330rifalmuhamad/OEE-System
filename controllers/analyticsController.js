@@ -2,12 +2,24 @@ const { db } = require("../lib/db");
 
 async function getOeeAnalytics(req, res) {
   try {
-    const startDateParam = req.query.startDate;
-    const endDateParam = req.query.endDate;
+    const startDateParam = req.query.startDate || req.query.date;
+    const endDateParam = req.query.endDate || req.query.date;
+    const okpParam = req.query.okp;
+    const machineIdParam = req.query.machineId;
+    const lineIdParam = req.query.lineId || req.query.lineProcessId || req.query.line;
+    const shiftParam = req.query.shift;
 
     const dateFilter = {};
-    if (startDateParam) dateFilter.gte = new Date(startDateParam);
-    if (endDateParam) dateFilter.lte = new Date(endDateParam);
+    if (startDateParam) {
+      const start = new Date(startDateParam);
+      start.setUTCHours(0, 0, 0, 0);
+      dateFilter.gte = start;
+    }
+    if (endDateParam) {
+      const end = new Date(endDateParam);
+      end.setUTCHours(23, 59, 59, 999);
+      dateFilter.lte = end;
+    }
 
     let companyId;
     if (req.user) {
@@ -21,7 +33,25 @@ async function getOeeAnalytics(req, res) {
     if (startDateParam || endDateParam) {
       whereClause.date = dateFilter;
     }
-
+    if (okpParam) {
+      whereClause.okpNumber = okpParam;
+    }
+    if (machineIdParam) {
+      whereClause.machineId = parseInt(machineIdParam, 10);
+    } else if (lineIdParam) {
+      const lineIdInt = parseInt(lineIdParam, 10);
+      if (!isNaN(lineIdInt)) {
+        const machinesInLine = await db.machine.findMany({
+          where: { lineProcessId: lineIdInt, companyId },
+          select: { id: true }
+        });
+        const machineIds = machinesInLine.map(m => m.id);
+        whereClause.machineId = { in: machineIds };
+      }
+    }
+    if (shiftParam) {
+      whereClause.shift = parseInt(shiftParam, 10);
+    }
 
     // Fetch OKP logs
     const okpLogs = await db.okpLog.findMany({
@@ -58,6 +88,7 @@ async function getOeeAnalytics(req, res) {
         pareto: [],
         machineOee: [],
         timeline: [],
+        latestOkp: null,
       });
     }
 
@@ -71,6 +102,10 @@ async function getOeeAnalytics(req, res) {
     let totalDefectLoss = 0;
     let totalValuedOperatingTime = 0;
     let totalActualOutput = 0;
+    let totalRework = 0;
+    let totalReject = 0;
+    let totalStdSpeed = 0;
+    let okpCount = 0;
 
     // Pareto buckets
     const paretoCategories = {};
@@ -97,16 +132,26 @@ async function getOeeAnalytics(req, res) {
       // 3. Separate Downtime vs Minor Stoppages (MI)
       let logDowntime = 0;
       let logMI = 0;
+      let logDowntimeCount = 0;
       let lastActivityCategory = "";
 
       sortedActivities.forEach((act) => {
         const categoryCode = act.activityCode.category.code;
         const categoryName = act.activityCode.category.name;
 
+        let actDuration = act.duration;
+        if (act.endTime === null) {
+          const startTime = act.startTime || act.createdAt || new Date();
+          actDuration = parseFloat(((new Date() - new Date(startTime)) / 60000).toFixed(2));
+          if (isNaN(actDuration) || actDuration < 0) {
+            actDuration = 0;
+          }
+        }
+
         if (categoryCode === "MI") {
-          logMI += act.duration;
+          logMI += actDuration;
         } else if (categoryCode !== "PR") {
-          logDowntime += act.duration;
+          logDowntime += actDuration;
         }
 
         // Accumulate Pareto chart data (for any downtime loss or minor stoppages)
@@ -114,11 +159,12 @@ async function getOeeAnalytics(req, res) {
           if (!paretoCategories[categoryCode]) {
             paretoCategories[categoryCode] = { minutes: 0, count: 0, name: categoryName };
           }
-          paretoCategories[categoryCode].minutes += act.duration;
+          paretoCategories[categoryCode].minutes += actDuration;
           
           // CONSECUTIVE SERIES RULE: If identical categories occur in series, their combined frequency = 1.
           if (categoryCode !== lastActivityCategory) {
             paretoCategories[categoryCode].count += 1;
+            logDowntimeCount += 1;
             lastActivityCategory = categoryCode;
           }
         } else {
@@ -144,6 +190,10 @@ async function getOeeAnalytics(req, res) {
       totalDefectLoss += logDefectLoss;
       totalValuedOperatingTime += logValuedOperatingTime;
       totalActualOutput += actualOutput;
+      totalRework += rework;
+      totalReject += reject;
+      totalStdSpeed += stdSpeed;
+      okpCount += 1;
 
       // 6. Accumulate Machine stats
       if (!machineStats[log.machineId]) {
@@ -160,6 +210,7 @@ async function getOeeAnalytics(req, res) {
           netOperating: 0,
           defectLoss: 0,
           valuedOperating: 0,
+          downtimeCount: 0,
         };
       }
       const m = machineStats[log.machineId];
@@ -174,6 +225,7 @@ async function getOeeAnalytics(req, res) {
       m.netOperating += logNetOperatingTime;
       m.defectLoss += logDefectLoss;
       m.valuedOperating += logValuedOperatingTime;
+      m.downtimeCount += logDowntimeCount;
     });
 
     // 7. Calculate Aggregated Core Rates
@@ -213,39 +265,82 @@ async function getOeeAnalytics(req, res) {
         netOperatingTime: parseFloat(m.netOperating.toFixed(1)),
         defectLoss: parseFloat(m.defectLoss.toFixed(1)),
         valuedOperatingTime: parseFloat(m.valuedOperating.toFixed(1)),
+        downtimeCount: m.downtimeCount,
       };
     });
 
     // OKP Timeline for linear chart trend
     const timelineData = okpLogs
       .map((log) => {
-        let logDowntime = 0;
-        let logMI = 0;
-        log.activities.forEach((act) => {
-          if (act.activityCode.category.code === "MI") {
-            logMI += act.duration;
-          } else if (act.activityCode.category.code !== "PR") {
-            logDowntime += act.duration;
-          }
-        });
-        const stdSpeed = log.product.standarSpeed || 1;
-        const logOperatingTime = log.loadingTime - logDowntime - logMI;
-        const logNetOperatingTime = log.totalOutput / stdSpeed;
-        const logDefectLoss = (log.rework + log.reject) / stdSpeed;
-        const logValuedOperatingTime = Math.max(0, logNetOperatingTime - logDefectLoss);
-
-        const avail = log.loadingTime > 0 ? (logOperatingTime / log.loadingTime) * 100 : 0;
-        const perf = logOperatingTime > 0 ? (logNetOperatingTime / logOperatingTime) * 100 : 0;
-        const qual = logNetOperatingTime > 0 ? (logValuedOperatingTime / logNetOperatingTime) * 100 : 0;
-        const logOee = (avail / 100) * (perf / 100) * (qual / 100) * 100;
-
         return {
           okpNumber: log.okpNumber,
           date: log.date.toISOString().split("T")[0],
-          oee: parseFloat(logOee.toFixed(1)),
+          oee: log.oee || 0,
+          availability: log.availability || 0,
+          performance: log.performance || 0,
+          quality: log.quality || 0,
         };
       })
       .slice(-15);
+
+    // Determine latest OKP and machine state
+    let latestOkpDetails = null;
+    if (okpLogs.length > 0) {
+      const sortedLogs = [...okpLogs].sort((a, b) => {
+        const timeA = new Date(a.date).getTime();
+        const timeB = new Date(b.date).getTime();
+        if (timeB !== timeA) return timeB - timeA;
+        return b.id - a.id;
+      });
+      const latestOkp = sortedLogs[0];
+
+      // Check machine state
+      const activeActivity = latestOkp.activities.find(act => act.endTime === null);
+      let status = "STOPPED";
+      if (activeActivity) {
+        status = activeActivity.activityCode.category.code === "PR" ? "RUNNING" : "STOPPED";
+      }
+
+      // Calculate operating time for running time display
+      let logDowntime = 0;
+      let logMI = 0;
+      latestOkp.activities.forEach((act) => {
+        const categoryCode = act.activityCode.category.code;
+        let actDuration = act.duration;
+        if (act.endTime === null) {
+          const startTime = act.startTime || act.createdAt || new Date();
+          actDuration = parseFloat(((new Date() - new Date(startTime)) / 60000).toFixed(2));
+          if (isNaN(actDuration) || actDuration < 0) {
+            actDuration = 0;
+          }
+        }
+        if (categoryCode === "MI") {
+          logMI += actDuration;
+        } else if (categoryCode !== "PR") {
+          logDowntime += actDuration;
+        }
+      });
+      
+      const logOperatingTime = Math.max(0, latestOkp.loadingTime - logDowntime - logMI);
+      const totalSeconds = Math.floor(logOperatingTime * 60);
+      const hrs = Math.floor(totalSeconds / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      const secs = totalSeconds % 60;
+      const runningTimeStr = [
+        String(hrs).padStart(2, "0"),
+        String(mins).padStart(2, "0"),
+        String(secs).padStart(2, "0")
+      ].join(":");
+
+      latestOkpDetails = {
+        okpNumber: latestOkp.okpNumber,
+        productName: latestOkp.product.name,
+        operator: latestOkp.operator || "SYSTEM",
+        status,
+        runningTime: runningTimeStr,
+        standardSpeed: latestOkp.product.standarSpeed,
+      };
+    }
 
     return res.json({
       summary: {
@@ -259,10 +354,15 @@ async function getOeeAnalytics(req, res) {
         netOperatingTime: parseFloat(totalNetOperatingTime.toFixed(1)),
         defectLoss: parseFloat(totalDefectLoss.toFixed(1)),
         valuedOperatingTime: parseFloat(totalValuedOperatingTime.toFixed(1)),
+        totalOutput: parseFloat(totalActualOutput.toFixed(1)),
+        rework: parseFloat(totalRework.toFixed(1)),
+        reject: parseFloat(totalReject.toFixed(1)),
+        standarSpeed: okpCount > 0 ? parseFloat((totalStdSpeed / okpCount).toFixed(1)) : 0,
       },
       pareto: paretoData,
       machineOee: machineOeeData,
       timeline: timelineData,
+      latestOkp: latestOkpDetails,
     });
   } catch (error) {
     console.error("GET OEE Analytics Error:", error);
