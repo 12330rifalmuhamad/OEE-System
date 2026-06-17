@@ -72,7 +72,7 @@ export default function LoginPage() {
         input:-webkit-autofill:active {
           -webkit-box-shadow: 0 0 0 100px var(--bg-input) inset !important;
           -webkit-text-fill-color: var(--text-primary) !important;
-          caret-color: #5ebd56 !important;
+          caret-color: var(--primary-brand) !important;
           transition: background-color 5000s ease-in-out 0s;
         }
 
@@ -90,8 +90,8 @@ export default function LoginPage() {
           transition: all 150ms ease;
         }
         .custom-checkbox:checked {
-          background-color: #5ebd56;
-          border-color: #53a74c;
+          background-color: var(--primary-brand);
+          border-color: var(--primary-hover);
         }
         .custom-checkbox::before {
           content: "";
@@ -113,7 +113,7 @@ export default function LoginPage() {
         }
 
         [data-theme="dark"] .static-card-shadow {
-          box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.65), 0 0 25px -5px rgba(94, 189, 86, 0.04);
+          box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.65), 0 0 25px -5px rgba(16, 185, 129, 0.04);
           border-color: rgba(38, 35, 43, 0.8);
         }
 
@@ -122,8 +122,8 @@ export default function LoginPage() {
         }
 
         [data-theme="dark"] .static-card-shadow:hover {
-          border-color: rgba(94, 189, 86, 0.2);
-          box-shadow: 0 35px 80px -10px rgba(0, 0, 0, 0.75), 0 0 35px -5px rgba(94, 189, 86, 0.08);
+          border-color: rgba(16, 185, 129, 0.2);
+          box-shadow: 0 35px 80px -10px rgba(0, 0, 0, 0.75), 0 0 35px -5px rgba(16, 185, 129, 0.08);
         }
       ` }} />
 

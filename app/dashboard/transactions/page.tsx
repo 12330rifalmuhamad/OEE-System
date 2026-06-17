@@ -11,7 +11,15 @@ interface OKPLog {
   shift: number;
   loadingTime: number;
   totalOutput: number;
-  machine: { name: string };
+  rework: number;
+  reject: number;
+  downtime: number;
+  mi: number;
+  availability: number;
+  performance: number;
+  quality: number;
+  oee: number;
+  machine: { name: string; lineProcess?: { name: string } | null };
   product: { name: string; productCode: string | null };
   _count: { activities: number };
 }
@@ -42,8 +50,8 @@ export default function OKPTransactionsPage() {
 
 
 
-  const fetchLogs = async () => {
-    setLoading(true);
+  const fetchLogs = async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/transactions/okp");
@@ -58,15 +66,15 @@ export default function OKPTransactionsPage() {
       console.error(err);
       setError("Kesalahan koneksi ke server.");
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLogs(); // Initial fetch on mount
+    fetchLogs(false); // Initial load with spinner
 
     const interval = setInterval(() => {
-      fetchLogs();
+      fetchLogs(true); // Quiet update in background every 3 seconds
     }, 3000);
 
     return () => clearInterval(interval);
@@ -83,15 +91,7 @@ export default function OKPTransactionsPage() {
           </h2>
           <p className="text-xs text-[var(--text-secondary)] mt-1 font-mono">Daftar riwayat transaksi kerja harian, loading time, dan output per mesin.</p>
         </div>
-        {hasMounted && currentUser && (
-          <Link
-            href="/dashboard/transactions/create"
-            className="flex items-center gap-2 px-4 py-2 bg-[#5ebd56] hover:bg-[#53a74c] text-black font-extrabold rounded-lg text-xs font-mono uppercase tracking-wider transition-all cursor-pointer shadow-[0_2px_8px_rgba(94,189,86,0.1)]"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            New OKP Entry
-          </Link>
-        )}
+        {/* Automatisasi: OKP dibuat otomatis dari mesin/sistem luar */}
       </div>
 
       {/* Main Container */}
@@ -100,7 +100,7 @@ export default function OKPTransactionsPage() {
         <div className="flex justify-between items-center bg-[var(--bg-card)] p-4 border-b border-[var(--border-color)]">
           <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider font-mono">Total Logs Indexed: {logs.length}</span>
           <button
-            onClick={fetchLogs}
+            onClick={() => fetchLogs(false)}
             className="p-1.5 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)]/80 border border-[var(--border-color)] rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
@@ -111,41 +111,48 @@ export default function OKPTransactionsPage() {
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-[var(--bg-card)] border-b border-[var(--border-color)] text-[var(--text-secondary)] font-semibold uppercase tracking-wider font-mono">
-                <th className="py-4 px-6 text-center w-16">No</th>
-                <th className="py-4 px-6">Date & Shift</th>
-                <th className="py-4 px-6">OKP Number</th>
-                <th className="py-4 px-6">Production Line</th>
-                <th className="py-4 px-6">Active Product</th>
-                <th className="py-4 px-6 text-right">Loading Time</th>
-                <th className="py-4 px-6 text-right">FG Output</th>
-                <th className="py-4 px-6 text-center">Logs</th>
+                <th className="py-3 px-3 text-center w-12">No</th>
+                <th className="py-3 px-3 min-w-[100px]">Date & Shift</th>
+                <th className="py-3 px-3">OKP Number</th>
+                <th className="py-3 px-3">Production Line</th>
+                <th className="py-3 px-3 min-w-[120px]">Active Product</th>
+                <th className="py-3 px-3 text-right">Loading</th>
+                <th className="py-3 px-3 text-right">Downtime</th>
+                <th className="py-3 px-3 text-right">FG Output</th>
+                <th className="py-3 px-3 text-right">Rework</th>
+                <th className="py-3 px-3 text-right">Reject</th>
+                <th className="py-3 px-3 text-right font-bold text-[#5ebd56]">AR</th>
+                <th className="py-3 px-3 text-right font-bold text-[#fed130]">PR</th>
+                <th className="py-3 px-3 text-right font-bold text-[#f2a134]">QR</th>
+                <th className="py-3 px-3 text-right font-bold">OEE</th>
+                <th className="py-3 px-3 text-center min-w-[160px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-primary)] font-mono">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-[var(--text-secondary)] italic">
+                  <td colSpan={15} className="py-12 text-center text-[var(--text-secondary)] italic">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto text-[#5ebd56] mb-2" />
                     Memuat catatan transaksi...
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-rose-500 font-semibold font-sans">
+                  <td colSpan={15} className="py-12 text-center text-rose-500 font-semibold font-sans">
                     {error}
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-[var(--text-secondary)] italic font-sans font-medium">
-                    Belum ada transaksi OKP yang dicatat. {hasMounted && currentUser ? 'Klik "New OKP Entry" untuk memulai.' : 'Silakan login untuk mencatat OKP.'}
+                  <td colSpan={15} className="py-12 text-center text-[var(--text-secondary)] italic font-sans font-medium">
+                    Belum ada transaksi OKP yang tersinkronisasi dari sistem mesin/ERP.
                   </td>
                 </tr>
               ) : (
                 logs.map((log, idx) => (
                   <tr key={log.id} className="hover:bg-[var(--hover-bg)]/20 transition-all">
-                    <td className="py-4 px-6 text-center text-[var(--text-secondary)] font-semibold">{idx + 1}</td>
-                    <td className="py-4 px-6">
+                    <td className="py-3.5 px-3 text-center text-[var(--text-secondary)] font-semibold">{idx + 1}</td>
+                    <td className="py-3.5 px-3">
                       <div className="flex flex-col animate-fadeIn">
                         <span className="font-semibold text-[var(--text-primary)] flex items-center gap-1.5 font-sans">
                           <Calendar className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
@@ -160,14 +167,14 @@ export default function OKPTransactionsPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="py-4 px-6 font-mono text-xs font-bold text-[var(--text-primary)]">{log.okpNumber}</td>
-                    <td className="py-4 px-6">
+                    <td className="py-3.5 px-3 font-mono text-xs font-bold text-[var(--text-primary)]">{log.okpNumber}</td>
+                    <td className="py-3.5 px-3">
                       <span className="flex items-center gap-1.5 text-[var(--text-primary)] font-sans">
                         <Cpu className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
-                        {log.machine.name}
+                        {log.machine.lineProcess?.name || log.machine.name}
                       </span>
                     </td>
-                    <td className="py-4 px-6 font-sans">
+                    <td className="py-3.5 px-3 font-sans">
                       <div className="flex flex-col animate-fadeIn">
                         <span className="font-semibold text-[var(--text-primary)]">{log.product.name}</span>
                         {log.product.productCode && (
@@ -177,29 +184,61 @@ export default function OKPTransactionsPage() {
                         )}
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-right text-[var(--text-primary)] font-mono">
-                      {log.loadingTime} <span className="text-[10px] text-[var(--text-secondary)]">mins</span>
+                    <td className="py-3.5 px-3 text-right text-[var(--text-primary)] font-mono">
+                      {log.loadingTime} <span className="text-[9px] text-[var(--text-secondary)]">m</span>
                     </td>
-                    <td className="py-4 px-6 text-right text-[var(--text-primary)] font-bold font-mono">
-                      {log.totalOutput.toLocaleString("id-ID")} <span className="text-[10px] text-[var(--text-secondary)]">CB</span>
+                    <td className="py-3.5 px-3 text-right text-[var(--text-primary)] font-mono">
+                      {log.downtime !== undefined ? log.downtime : 0} <span className="text-[9px] text-[var(--text-secondary)]">m</span>
                     </td>
-                    <td className="py-4 px-6 text-center">
-                      <div className="flex items-center justify-center gap-3 font-sans">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#5ebd56]/10 text-[#5ebd56] text-xs font-bold rounded-full border border-[#5ebd56]/20 font-sans" title="Total Logs">
-                          <Layers className="w-3 h-3" />
+                    <td className="py-3.5 px-3 text-right text-[var(--text-primary)] font-bold font-mono">
+                      {log.totalOutput.toLocaleString("id-ID")} <span className="text-[9px] text-[var(--text-secondary)]">CB</span>
+                    </td>
+                    <td className="py-3.5 px-3 text-right text-[var(--text-primary)] font-mono">
+                      {log.rework !== undefined ? log.rework : 0} <span className="text-[9px] text-[var(--text-secondary)]">Kg</span>
+                    </td>
+                    <td className="py-3.5 px-3 text-right text-[var(--text-primary)] font-mono">
+                      {log.reject !== undefined ? log.reject : 0} <span className="text-[9px] text-[var(--text-secondary)]">Kg</span>
+                    </td>
+                    <td className="py-3.5 px-3 text-right text-[#5ebd56] font-bold font-mono">
+                      {log.availability !== undefined ? log.availability : 0}%
+                    </td>
+                    <td className="py-3.5 px-3 text-right text-[#fed130] font-bold font-mono">
+                      {log.performance !== undefined ? log.performance : 0}%
+                    </td>
+                    <td className="py-3.5 px-3 text-right text-[#f2a134] font-bold font-mono">
+                      {log.quality !== undefined ? log.quality : 0}%
+                    </td>
+                    <td className={`py-3.5 px-3 text-right font-extrabold font-mono ${
+                      (log.oee || 0) >= 85 ? "text-[#5ebd56]" : (log.oee || 0) >= 70 ? "text-[#fed130]" : "text-rose-400"
+                    }`}>
+                      {log.oee !== undefined ? log.oee : 0}%
+                    </td>
+                    <td className="py-3.5 px-3 text-center">
+                      <div className="flex items-center justify-center gap-2 font-sans">
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-[#5ebd56]/10 text-[#5ebd56] text-[10px] font-bold rounded-full border border-[#5ebd56]/20 font-sans" title="Total Logs">
+                          <Layers className="w-2.5 h-2.5" />
                           {log._count.activities}
                         </span>
                         {hasMounted && currentUser ? (
-                          <Link
-                            href={`/dashboard/transactions/${log.id}/adjust`}
-                            className="px-2.5 py-1 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] text-[#5ebd56] hover:text-emerald-500 font-bold rounded border border-[var(--border-color)] text-[10px] uppercase tracking-wider transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-                          >
-                            <Edit3 className="w-3 h-3" />
-                            <span>Adjust</span>
-                          </Link>
+                          <div className="flex gap-1">
+                            <Link
+                              href={`/dashboard/transactions/${log.id}/edit`}
+                              className="px-2 py-0.5 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] text-[var(--text-primary)] hover:text-[#5ebd56] font-bold rounded border border-[var(--border-color)] text-[9px] uppercase tracking-wider transition-all cursor-pointer shadow-sm flex items-center gap-1"
+                            >
+                              <Edit3 className="w-2.5 h-2.5" />
+                              <span>Edit</span>
+                            </Link>
+                            <Link
+                              href={`/dashboard/transactions/${log.id}/adjust`}
+                              className="px-2 py-0.5 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] text-[#5ebd56] hover:text-emerald-500 font-bold rounded border border-[var(--border-color)] text-[9px] uppercase tracking-wider transition-all cursor-pointer shadow-sm flex items-center gap-1"
+                            >
+                              <Edit3 className="w-2.5 h-2.5" />
+                              <span>Adjust</span>
+                            </Link>
+                          </div>
                         ) : (
-                          <span className="px-2 py-1 text-[9px] text-[var(--text-secondary)] font-bold border border-dashed border-[var(--border-color)] rounded uppercase tracking-wider select-none bg-[var(--bg-input)]/30">
-                            Read-Only
+                          <span className="px-1.5 py-0.5 text-[8px] text-[var(--text-secondary)] font-bold border border-dashed border-[var(--border-color)] rounded uppercase tracking-wider select-none bg-[var(--bg-input)]/30">
+                            R-Only
                           </span>
                         )}
                       </div>

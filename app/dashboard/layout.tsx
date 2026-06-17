@@ -24,7 +24,9 @@ import {
   Moon,
   Monitor,
   GitCommit,
+  ListTodo,
 } from "lucide-react";
+import RealtimePopup from "./RealtimePopup";
 
 
 export default function DashboardLayout({
@@ -34,6 +36,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const isKioskMode = pathname === "/dashboard/kiosk";
   const [masterDataOpen, setMasterDataOpen] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isSidebarHidden, setIsSidebarHidden] = useState(false);
@@ -83,7 +86,6 @@ export default function DashboardLayout({
             const protectedPaths = [
               "/dashboard/master",
               "/dashboard/settings",
-              "/dashboard/transactions/create",
             ];
             const isProtected = protectedPaths.some(path => pathname.startsWith(path)) || pathname.includes("/adjust");
             if (isProtected) {
@@ -96,7 +98,6 @@ export default function DashboardLayout({
           const protectedPaths = [
             "/dashboard/master",
             "/dashboard/settings",
-            "/dashboard/transactions/create",
           ];
           const isProtected = protectedPaths.some(path => pathname.startsWith(path)) || pathname.includes("/adjust");
           if (isProtected) {
@@ -133,6 +134,16 @@ export default function DashboardLayout({
       href: "/dashboard/transactions",
       icon: ClipboardList,
     },
+    {
+      name: "DMS Board",
+      href: "/dashboard/dms",
+      icon: ListTodo,
+    },
+    {
+      name: "Dashboard View",
+      href: "/dashboard/kiosk",
+      icon: Monitor,
+    },
   ];
 
   const masterItems = [
@@ -146,12 +157,12 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen w-screen bg-[var(--bg-base)] text-[var(--text-primary)] font-sans overflow-hidden relative transition-colors duration-200">
-      
+
       {/* 1. SIDEBAR NAVIGATION - Premium Adaptive Theme */}
-      <aside className={`flex flex-col justify-between bg-[var(--bg-sidebar)] border-r border-[var(--border-sidebar)] flex-shrink-0 z-20 relative shadow-[5px_0_20px_rgba(0,0,0,0.05)] dark:shadow-[5px_0_20px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out ${isSidebarHidden ? "w-16 py-4 px-2" : "w-64 p-4"}`}>
-        
+      <aside className={`${isKioskMode ? "hidden" : "flex"} flex-col justify-between bg-[var(--bg-sidebar)] border-r border-[var(--border-sidebar)] flex-shrink-0 z-20 relative shadow-[5px_0_20px_rgba(0,0,0,0.05)] dark:shadow-[5px_0_20px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out ${isSidebarHidden ? "w-16 py-4 px-2" : "w-64 p-4"}`}>
+
         <div className={`flex flex-col gap-6 relative z-10 ${isSidebarHidden ? "w-full" : "w-56"}`}>
-          
+
           {/* Brand Logo & Collapse/Expand Button */}
           <div className={`flex items-center justify-between w-full pb-4 border-b border-[var(--border-sidebar)]/60 select-none ${isSidebarHidden ? "flex-col gap-4 px-1" : "gap-2"}`}>
             {!isSidebarHidden ? (
@@ -161,7 +172,7 @@ export default function DashboardLayout({
                 </div>
                 <button
                   onClick={toggleSidebar}
-                  className="p-1.5 hover:bg-[var(--hover-bg)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer flex items-center justify-center"
+                  className="p-1.5 hover:bg-[var(--sidebar-hover-bg)] rounded-lg text-[var(--sidebar-text)] hover:text-[var(--sidebar-text-hover)] transition-colors cursor-pointer flex items-center justify-center"
                   title="Collapse Sidebar"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -170,7 +181,7 @@ export default function DashboardLayout({
             ) : (
               <button
                 onClick={toggleSidebar}
-                className="p-2 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] rounded-lg text-[#5ebd56] transition-all cursor-pointer flex items-center justify-center shadow-md border border-[var(--border-sidebar)] hover:scale-105 active:scale-95"
+                className="p-2 bg-[var(--sidebar-hover-bg)] hover:bg-[var(--sidebar-hover-bg)]/80 rounded-lg text-[var(--sidebar-active-border)] transition-all cursor-pointer flex items-center justify-center shadow-md border border-[var(--border-sidebar)] hover:scale-105 active:scale-95"
                 title="Expand Sidebar"
               >
                 <ChevronRight className="w-4.5 h-4.5" />
@@ -187,18 +198,17 @@ export default function DashboardLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative flex items-center rounded-lg text-xs font-bold tracking-wide transition-all duration-200 border ${
-                    isActive
-                      ? "bg-[var(--hover-bg)] text-[var(--text-primary)] border-[#5ebd56]/10 shadow-[0_2px_8px_rgba(94,189,86,0.02)]"
-                      : "text-[var(--text-secondary)] border-transparent hover:bg-[var(--hover-bg)]/40 hover:text-[var(--text-primary)]"
-                  } ${isSidebarHidden ? "justify-center p-2.5 w-10 h-10 mx-auto" : "gap-3 px-3.5 py-2.5"}`}
+                  className={`relative flex items-center rounded-lg text-xs font-bold tracking-wide transition-all duration-200 border ${isActive
+                      ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)] border-transparent shadow-sm"
+                      : "text-[var(--sidebar-text)] border-transparent hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-text-hover)]"
+                    } ${isSidebarHidden ? "justify-center p-2.5 w-10 h-10 mx-auto" : "gap-3 px-3.5 py-2.5"}`}
                   title={isSidebarHidden ? item.name : undefined}
                 >
                   {/* Left Premium Active Indicator Ribbon */}
                   {isActive && (
-                    <span className={`absolute top-1/2 -translate-y-1/2 w-[3px] bg-[#5ebd56] rounded-r-md animate-pulse ${isSidebarHidden ? "left-0 h-4" : "left-0 h-5"}`} />
+                    <span className={`absolute top-1/2 -translate-y-1/2 w-[3px] bg-[var(--sidebar-active-border)] rounded-r-md animate-pulse ${isSidebarHidden ? "left-0 h-4" : "left-0 h-5"}`} />
                   )}
-                  <Icon className={`w-4 h-4 transition-transform duration-200 ${isActive ? "text-[#5ebd56] scale-110" : "text-[var(--text-secondary)]"}`} />
+                  <Icon className={`w-4 h-4 transition-transform duration-200 ${isActive ? "text-[var(--sidebar-active-text)] scale-110" : "text-[var(--sidebar-text)]"}`} />
                   {!isSidebarHidden && <span>{item.name}</span>}
                 </Link>
               );
@@ -213,24 +223,24 @@ export default function DashboardLayout({
                       toggleSidebar();
                       setMasterDataOpen(true);
                     }}
-                    className="relative flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 border border-transparent hover:bg-[var(--hover-bg)]/40 text-[var(--text-secondary)] hover:text-[var(--text-primary)] w-10 h-10 mx-auto p-2.5"
+                    className="relative flex items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 border border-transparent hover:bg-[var(--sidebar-hover-bg)] text-[var(--sidebar-text)] hover:text-[var(--sidebar-text-hover)] w-10 h-10 mx-auto p-2.5"
                     title="Master Data"
                   >
-                    <Database className="w-4 h-4 text-[var(--text-secondary)]" />
+                    <Database className="w-4 h-4 text-[var(--sidebar-text)]" />
                   </button>
                 ) : (
                   <button
                     onClick={() => setMasterDataOpen(!masterDataOpen)}
-                    className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-lg text-xs font-bold tracking-wide text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]/40 hover:text-[var(--text-primary)] transition-colors"
+                    className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-lg text-xs font-bold tracking-wide text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-text-hover)] transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <Database className="w-4 h-4 text-[var(--text-secondary)]" />
+                      <Database className="w-4 h-4 text-[var(--sidebar-text)]" />
                       <span>Master Data</span>
                     </div>
                     {masterDataOpen ? (
-                      <ChevronUp className="w-3.5 h-3.5 text-zinc-500" />
+                      <ChevronUp className="w-3.5 h-3.5 text-[var(--sidebar-text)]/70" />
                     ) : (
-                      <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
+                      <ChevronDown className="w-3.5 h-3.5 text-[var(--sidebar-text)]/70" />
                     )}
                   </button>
                 )}
@@ -245,17 +255,16 @@ export default function DashboardLayout({
                         <Link
                           key={subItem.href}
                           href={subItem.href}
-                          className={`relative flex items-center gap-3 px-3 py-2 rounded-md text-[11px] font-bold tracking-wide transition-all border ${
-                            isSubActive
-                              ? "bg-[var(--hover-bg)] text-[var(--text-primary)] border-[#5ebd56]/10"
-                              : "text-[var(--text-secondary)] border-transparent hover:bg-[var(--hover-bg)]/20 hover:text-[var(--text-primary)]"
-                          }`}
+                          className={`relative flex items-center gap-3 px-3 py-2 rounded-md text-[11px] font-bold tracking-wide transition-all border ${isSubActive
+                              ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)] border-transparent"
+                              : "text-[var(--sidebar-text)] border-transparent hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-text-hover)]"
+                            }`}
                         >
                           {/* Submenu Active left ribbon */}
                           {isSubActive && (
-                            <span className="absolute left-[-13px] top-1/2 -translate-y-1/2 w-[3px] h-3.5 bg-[#5ebd56] rounded-r-md" />
+                            <span className="absolute left-[-13px] top-1/2 -translate-y-1/2 w-[3px] h-3.5 bg-[var(--sidebar-active-border)] rounded-r-md" />
                           )}
-                          <SubIcon className={`w-3.5 h-3.5 ${isSubActive ? "text-[#5ebd56]" : "text-[var(--text-secondary)]"}`} />
+                          <SubIcon className={`w-3.5 h-3.5 ${isSubActive ? "text-[var(--sidebar-active-text)]" : "text-[var(--sidebar-text)]"}`} />
                           {subItem.name}
                         </Link>
                       );
@@ -268,17 +277,16 @@ export default function DashboardLayout({
             {/* Other static links */}
             <Link
               href="/dashboard/analytics"
-              className={`relative flex items-center rounded-lg text-xs font-bold tracking-wide transition-all border ${
-                pathname === "/dashboard/analytics"
-                  ? "bg-[var(--hover-bg)] text-[var(--text-primary)] border-[#5ebd56]/10"
-                  : "text-[var(--text-secondary)] border-transparent hover:bg-[var(--hover-bg)]/40 hover:text-[var(--text-primary)]"
-              } ${isSidebarHidden ? "justify-center p-2.5 w-10 h-10 mx-auto" : "gap-3 px-3.5 py-2.5"}`}
+              className={`relative flex items-center rounded-lg text-xs font-bold tracking-wide transition-all border ${pathname === "/dashboard/analytics"
+                  ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)] border-transparent"
+                  : "text-[var(--sidebar-text)] border-transparent hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-text-hover)]"
+                } ${isSidebarHidden ? "justify-center p-2.5 w-10 h-10 mx-auto" : "gap-3 px-3.5 py-2.5"}`}
               title={isSidebarHidden ? "Pareto Analytics" : undefined}
             >
               {pathname === "/dashboard/analytics" && (
-                <span className={`absolute top-1/2 -translate-y-1/2 w-[3px] bg-[#5ebd56] rounded-r-md ${isSidebarHidden ? "left-0 h-4" : "left-0 h-5"}`} />
+                <span className={`absolute top-1/2 -translate-y-1/2 w-[3px] bg-[var(--sidebar-active-border)] rounded-r-md ${isSidebarHidden ? "left-0 h-4" : "left-0 h-5"}`} />
               )}
-              <BarChart3 className={`w-4 h-4 transition-transform duration-200 ${pathname === "/dashboard/analytics" ? "text-[#5ebd56] scale-110" : "text-[var(--text-secondary)]"}`} />
+              <BarChart3 className={`w-4 h-4 transition-transform duration-200 ${pathname === "/dashboard/analytics" ? "text-[var(--sidebar-active-text)] scale-110" : "text-[var(--sidebar-text)]"}`} />
               {!isSidebarHidden && <span>Pareto Analytics</span>}
             </Link>
 
@@ -286,17 +294,16 @@ export default function DashboardLayout({
             {currentUser && (
               <Link
                 href="/dashboard/settings"
-                className={`relative flex items-center rounded-lg text-xs font-bold tracking-wide transition-all border ${
-                  pathname === "/dashboard/settings"
-                    ? "bg-[var(--hover-bg)] text-[var(--text-primary)] border-[#5ebd56]/10"
-                    : "text-[var(--text-secondary)] border-transparent hover:bg-[var(--hover-bg)]/40 hover:text-[var(--text-primary)]"
-                } ${isSidebarHidden ? "justify-center p-2.5 w-10 h-10 mx-auto" : "gap-3 px-3.5 py-2.5"}`}
+                className={`relative flex items-center rounded-lg text-xs font-bold tracking-wide transition-all border ${pathname === "/dashboard/settings"
+                    ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)] border-transparent"
+                    : "text-[var(--sidebar-text)] border-transparent hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-text-hover)]"
+                  } ${isSidebarHidden ? "justify-center p-2.5 w-10 h-10 mx-auto" : "gap-3 px-3.5 py-2.5"}`}
                 title={isSidebarHidden ? "System Config" : undefined}
               >
                 {pathname === "/dashboard/settings" && (
-                  <span className={`absolute top-1/2 -translate-y-1/2 w-[3px] bg-[#5ebd56] rounded-r-md ${isSidebarHidden ? "left-0 h-4" : "left-0 h-5"}`} />
+                  <span className={`absolute top-1/2 -translate-y-1/2 w-[3px] bg-[var(--sidebar-active-border)] rounded-r-md ${isSidebarHidden ? "left-0 h-4" : "left-0 h-5"}`} />
                 )}
-                <Settings className={`w-4 h-4 transition-transform duration-200 ${pathname === "/dashboard/settings" ? "text-[#5ebd56] scale-110" : "text-[var(--text-secondary)]"}`} />
+                <Settings className={`w-4 h-4 transition-transform duration-200 ${pathname === "/dashboard/settings" ? "text-[var(--sidebar-active-text)] scale-110" : "text-[var(--sidebar-text)]"}`} />
                 {!isSidebarHidden && <span>System Config</span>}
               </Link>
             )}
@@ -305,16 +312,16 @@ export default function DashboardLayout({
 
         {/* Footer Profile & Theme Panel */}
         <div className={`flex flex-col pt-4 border-t border-[var(--border-sidebar)] relative z-10 ${isSidebarHidden ? "gap-4 items-center" : "gap-3.5"}`}>
-          
+
           {/* Theme Selector Component */}
           {!isSidebarHidden ? (
-            <div className="flex items-center bg-[var(--bg-input)] border border-[var(--border-color)] p-1 rounded-xl w-full justify-between mt-1">
+            <div className="flex items-center bg-[var(--sidebar-hover-bg)] border border-[var(--border-sidebar)] p-1 rounded-xl w-full justify-between mt-1">
               <button
                 onClick={() => handleThemeChange("light")}
                 className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all font-mono cursor-pointer ${theme === "light"
-                  ? "bg-[#5ebd56] text-black shadow-sm font-extrabold"
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                }`}
+                  ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)] shadow-sm font-extrabold"
+                  : "text-[var(--sidebar-text)] hover:text-[var(--sidebar-text-hover)]"
+                  }`}
                 title="Light Theme"
               >
                 <Sun className="w-3.5 h-3.5" />
@@ -323,9 +330,9 @@ export default function DashboardLayout({
               <button
                 onClick={() => handleThemeChange("dark")}
                 className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all font-mono cursor-pointer ${theme === "dark"
-                  ? "bg-[#5ebd56] text-black shadow-sm font-extrabold"
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                }`}
+                  ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)] shadow-sm font-extrabold"
+                  : "text-[var(--sidebar-text)] hover:text-[var(--sidebar-text-hover)]"
+                  }`}
                 title="Night Theme"
               >
                 <Moon className="w-3.5 h-3.5" />
@@ -334,9 +341,9 @@ export default function DashboardLayout({
               <button
                 onClick={() => handleThemeChange("system")}
                 className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all font-mono cursor-pointer ${theme === "system"
-                  ? "bg-[#5ebd56] text-black shadow-sm font-extrabold"
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                }`}
+                  ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)] shadow-sm font-extrabold"
+                  : "text-[var(--sidebar-text)] hover:text-[var(--sidebar-text-hover)]"
+                  }`}
                 title="System Default"
               >
                 <Monitor className="w-3.5 h-3.5" />
@@ -353,7 +360,7 @@ export default function DashboardLayout({
                 };
                 handleThemeChange(nextThemes[theme]);
               }}
-              className="w-10 h-10 rounded-lg bg-[var(--bg-input)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-primary)] hover:text-[#5ebd56] transition-all cursor-pointer shadow-md"
+              className="w-10 h-10 rounded-lg bg-[var(--sidebar-hover-bg)] border border-[var(--border-sidebar)] flex items-center justify-center text-[var(--sidebar-text)] hover:text-[var(--sidebar-text-hover)] transition-all cursor-pointer shadow-md"
               title={`Theme: ${theme.toUpperCase()} (Click to toggle)`}
             >
               {theme === "light" && <Sun className="w-4 h-4" />}
@@ -367,15 +374,15 @@ export default function DashboardLayout({
             <>
               <div className={`flex items-center gap-3 ${isSidebarHidden ? "px-0 justify-center" : "px-2"}`}>
                 <div
-                  className="w-8 h-8 rounded-full bg-[var(--hover-bg)] border border-[var(--border-color)] flex items-center justify-center text-[#5ebd56] font-bold text-xs font-mono shadow-sm"
+                  className="w-8 h-8 rounded-full bg-[var(--sidebar-hover-bg)] border border-[var(--border-sidebar)] flex items-center justify-center text-[var(--sidebar-text-hover)] font-bold text-xs font-mono shadow-sm"
                   title={isSidebarHidden ? `${currentUser.email} (${currentUser.role})` : undefined}
                 >
                   {currentUser.email.charAt(0).toUpperCase()}
                 </div>
                 {!isSidebarHidden && (
                   <div className="overflow-hidden">
-                    <p className="text-xs font-semibold text-[var(--text-primary)] truncate">{currentUser.email}</p>
-                    <p className="text-[9px] text-[#5ebd56] font-extrabold tracking-widest uppercase font-mono mt-0.5">
+                    <p className="text-xs font-semibold text-white truncate">{currentUser.email}</p>
+                    <p className="text-[9px] text-[var(--sidebar-active-border)] font-extrabold tracking-widest uppercase font-mono mt-0.5">
                       {currentUser.role}
                     </p>
                   </div>
@@ -383,7 +390,7 @@ export default function DashboardLayout({
               </div>
               <button
                 onClick={handleLogout}
-                className={`flex items-center justify-center bg-rose-550/5 hover:bg-rose-500/10 active:bg-rose-500/15 text-rose-500 rounded-lg text-xs font-bold border border-rose-500/10 transition-colors cursor-pointer font-mono ${isSidebarHidden ? "w-10 h-10" : "w-full py-2.5 gap-2 tracking-wider"}`}
+                className={`flex items-center justify-center bg-rose-550/5 hover:bg-rose-500/10 active:bg-rose-500/15 text-rose-300 rounded-lg text-xs font-bold border border-rose-500/10 transition-colors cursor-pointer font-mono ${isSidebarHidden ? "w-10 h-10" : "w-full py-2.5 gap-2 tracking-wider"}`}
                 title={isSidebarHidden ? "Logout" : undefined}
               >
                 <LogOut className="w-4 h-4" />
@@ -394,15 +401,15 @@ export default function DashboardLayout({
             <>
               <div className={`flex items-center gap-3 ${isSidebarHidden ? "px-0 justify-center" : "px-2"}`}>
                 <div
-                  className="w-8 h-8 rounded-full bg-[var(--hover-bg)] border border-[var(--border-color)] flex items-center justify-center text-[#f2a134] font-bold text-xs font-mono shadow-sm"
+                  className="w-8 h-8 rounded-full bg-[var(--sidebar-hover-bg)] border border-[var(--border-sidebar)] flex items-center justify-center text-[var(--sidebar-active-border)] font-bold text-xs font-mono shadow-sm"
                   title={isSidebarHidden ? "Guest Mode (Read-Only)" : undefined}
                 >
                   G
                 </div>
                 {!isSidebarHidden && (
                   <div className="overflow-hidden">
-                    <p className="text-xs font-semibold text-[var(--text-primary)] truncate">Guest Mode</p>
-                    <p className="text-[9px] text-[#f2a134] font-extrabold tracking-widest uppercase font-mono mt-0.5 animate-pulse">
+                    <p className="text-xs font-semibold text-white truncate">Guest Mode</p>
+                    <p className="text-[9px] text-[var(--sidebar-active-border)] font-extrabold tracking-widest uppercase font-mono mt-0.5 animate-pulse">
                       READ-ONLY
                     </p>
                   </div>
@@ -410,7 +417,7 @@ export default function DashboardLayout({
               </div>
               <Link
                 href="/login"
-                className={`flex items-center justify-center bg-[#5ebd56]/10 hover:bg-[#5ebd56]/20 text-[#5ebd56] rounded-lg text-xs font-bold border border-[#5ebd56]/20 transition-colors cursor-pointer font-mono ${isSidebarHidden ? "w-10 h-10" : "w-full py-2.5 gap-2 tracking-wider uppercase font-bold"}`}
+                className={`flex items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold border border-white/20 transition-colors cursor-pointer font-mono ${isSidebarHidden ? "w-10 h-10" : "w-full py-2.5 gap-2 tracking-wider uppercase font-bold"}`}
                 title={isSidebarHidden ? "Login" : undefined}
               >
                 <LogIn className="w-4 h-4" />
@@ -423,10 +430,15 @@ export default function DashboardLayout({
 
       {/* 2. MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col bg-transparent overflow-y-auto z-10 relative">
+        {/* Futuristic Tech Grid Background */}
+        <div className="tech-bg">
+          <div className="tech-grid" />
+        </div>
         <div className="relative z-10 flex-1 flex flex-col">
           {children}
         </div>
       </main>
+      <RealtimePopup />
     </div>
   );
 }

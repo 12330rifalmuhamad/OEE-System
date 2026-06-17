@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
 const geistMono = Geist_Mono({
@@ -25,15 +26,26 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${poppins.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
-
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                // Ignore browser extension errors in dev overlay
+                window.addEventListener('error', function(e) {
+                  if (e.filename && (e.filename.indexOf('chrome-extension') !== -1 || e.filename.indexOf('extension') !== -1)) {
+                    e.stopImmediatePropagation();
+                  }
+                });
+                window.addEventListener('unhandledrejection', function(e) {
+                  if (e.reason && e.reason.stack && (e.reason.stack.indexOf('chrome-extension') !== -1 || e.reason.stack.indexOf('extension') !== -1)) {
+                    e.stopImmediatePropagation();
+                  }
+                });
+
                 var theme = localStorage.getItem("theme") || "system";
                 var root = document.documentElement;
                 if (theme === "system") {

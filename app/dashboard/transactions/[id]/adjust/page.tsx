@@ -33,7 +33,7 @@ interface OKPLog {
   okpNumber: string;
   date: string;
   shift: number;
-  machine: { name: string };
+  machine: { name: string; lineProcess?: { name: string } | null };
   product: { name: string; standarSpeed: number };
   activities: ActivityLog[];
 }
@@ -354,7 +354,7 @@ export default function AdjustActivityPage() {
         <div className="flex flex-wrap items-center gap-3 bg-[var(--bg-card)] border border-[var(--border-color)] px-4 py-2 rounded-lg font-mono text-xs shadow-[var(--card-shadow)]">
           <div className="flex items-center gap-1.5 border-r border-[var(--border-color)] pr-3">
             <Cpu className="w-4.5 h-4.5 text-[#5ebd56]" />
-            <span className="text-[var(--text-primary)]">{okpLog.machine.name}</span>
+            <span className="text-[var(--text-primary)]">{okpLog.machine.lineProcess?.name || okpLog.machine.name}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Clock className="w-4.5 h-4.5 text-[#fed130]" />
@@ -430,10 +430,10 @@ export default function AdjustActivityPage() {
                         <div className="flex flex-col gap-1.5">
                           <div className="flex justify-between items-center">
                             <span className="text-[var(--text-secondary)] font-sans text-[10px] font-bold uppercase tracking-wider">
-                              Parameter Machine:
+                              Parameter Line:
                             </span>
                             <span className="font-bold text-[var(--text-primary)] bg-[var(--bg-input)] px-2 py-0.5 rounded text-[10px] border border-[var(--border-color)]/60">
-                              {okpLog.machine.name}
+                              {okpLog.machine.lineProcess?.name || okpLog.machine.name}
                             </span>
                           </div>
 

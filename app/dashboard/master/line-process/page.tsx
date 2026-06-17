@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Plus, Edit2, Trash2, X, RefreshCw, AlertCircle, GitCommit, Check } from "lucide-react";
+import { Search, Plus, Edit2, Trash2, X, RefreshCw, AlertCircle, GitCommit, Check, Monitor } from "lucide-react";
 
 interface Machine {
   id: number;
@@ -293,6 +293,13 @@ export default function LineProcessMasterPage() {
                     </td>
                     <td className="py-4 px-6 text-center">
                       <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={() => window.open(`/dashboard/kiosk?line=${l.id}`, "_blank")}
+                          className="p-1.5 bg-[var(--bg-input)] hover:bg-amber-500/10 border border-[var(--border-color)] hover:border-amber-500/30 text-[var(--text-secondary)] hover:text-amber-500 rounded transition-all cursor-pointer"
+                          title="Open Kiosk Monitor Dashboard in New Tab"
+                        >
+                          <Monitor className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => handleOpenEdit(l)}
                           className="p-1.5 bg-[var(--bg-input)] hover:bg-[#5ebd56]/10 border border-[var(--border-color)] hover:border-[#5ebd56]/30 text-[var(--text-secondary)] hover:text-[#5ebd56] rounded transition-all cursor-pointer"

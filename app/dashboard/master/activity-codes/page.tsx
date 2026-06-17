@@ -500,16 +500,16 @@ export default function ActivityCodesMasterPage() {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
           <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl max-w-3xl w-full overflow-hidden shadow-2xl relative flex flex-col max-h-[85vh]">
             {/* Header */}
-            <div className="flex justify-between items-center p-5 border-b border-[var(--border-color)] bg-[var(--bg-sidebar)]/40">
-              <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-[#5ebd56]" />
-                <h3 className="font-bold text-sm uppercase tracking-wider text-[var(--text-primary)] font-mono">
+            <div className="flex justify-between items-center p-5 border-b border-[var(--border-sidebar)] bg-[var(--primary-brand)] text-white">
+              <div className="flex items-center gap-2.5">
+                <FileSpreadsheet className="w-5 h-5 text-white" />
+                <h3 className="font-extrabold text-sm uppercase tracking-wider font-mono">
                   Bulk Import Activity Codes
                 </h3>
               </div>
               <button
                 onClick={() => setIsBulkOpen(false)}
-                className="p-1.5 hover:bg-[var(--hover-bg)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -525,17 +525,17 @@ export default function ActivityCodesMasterPage() {
               )}
 
               {/* Template instructions */}
-              <div className="bg-[var(--bg-input)] border border-[var(--border-color)] p-4 rounded-lg space-y-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-[var(--text-primary)] uppercase tracking-wider text-[10px]">Excel Copy-Paste Supported!</span>
-                  <span className="bg-[#1a2e22] text-emerald-450 px-2 py-0.5 rounded text-[8px] font-bold uppercase border border-emerald-500/10">Idempotent Upsert</span>
+              <div className="bg-[var(--bg-input)] border border-[var(--border-color)] p-4 rounded-xl space-y-2.5 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-[var(--text-primary)] uppercase tracking-wider text-[10px]">Excel Copy-Paste Supported!</span>
+                  <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-450 px-2.5 py-0.5 rounded-full text-[8px] font-extrabold uppercase border border-emerald-500/20">Idempotent Upsert</span>
                 </div>
-                <p className="text-[var(--text-secondary)] font-sans font-medium leading-relaxed">
+                <p className="text-[var(--text-secondary)] font-sans font-medium leading-relaxed text-[11px]">
                   You can copy cells from Excel or Google Sheets (containing code, category, main activity, sub activity, full description) and paste them directly in the text area below. Tabs and commas are auto-detected, and OEE categories are auto-extracted from the code prefix!
                 </p>
-                <div className="pt-2">
-                  <span className="font-semibold text-[var(--text-secondary)]">Excel Column Layout:</span>
-                  <div className="text-[9px] text-[#5ebd56] bg-[var(--bg-input)] border border-[var(--border-color)] p-2 rounded mt-1 overflow-x-auto select-all">
+                <div className="pt-1.5">
+                  <span className="font-extrabold text-[var(--text-secondary)] text-[10px] uppercase tracking-wider">Excel Column Layout:</span>
+                  <div className="text-[10px] text-[var(--primary-brand)] bg-[var(--bg-card)] border border-[var(--border-color)] p-2.5 rounded-lg mt-1 overflow-x-auto select-all font-mono font-bold shadow-inner">
                     Code [Tab] Category Name [Tab] Main Activity [Tab] - [Tab] Sub Activity [Tab] Full Description
                   </div>
                 </div>
@@ -546,10 +546,10 @@ export default function ActivityCodesMasterPage() {
                 
                 {/* Drag / File selector */}
                 <div className="flex flex-col gap-2">
-                  <span className="font-bold text-[var(--text-secondary)] uppercase tracking-wider text-[10px]">Option A: Upload CSV File</span>
-                  <label className="border-2 border-dashed border-[var(--border-color)] hover:border-[#5ebd56] rounded-lg p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-[var(--bg-input)]/50 h-36">
-                    <Upload className="w-6 h-6 text-zinc-500" />
-                    <span className="font-bold text-[var(--text-primary)] font-sans">Choose CSV File</span>
+                  <span className="font-extrabold text-[var(--text-secondary)] uppercase tracking-wider text-[10px]">Option A: Upload CSV File</span>
+                  <label className="border-2 border-dashed border-[var(--border-color)] hover:border-[var(--primary-brand)] rounded-xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all bg-[var(--bg-input)] hover:bg-[var(--hover-bg)]/20 h-40 group shadow-sm">
+                    <Upload className="w-7 h-7 text-[var(--text-secondary)] group-hover:text-[var(--primary-brand)] group-hover:scale-110 transition-transform duration-200" />
+                    <span className="font-extrabold text-[var(--text-primary)] font-sans text-xs">Choose CSV File</span>
                     <span className="text-[10px] text-[var(--text-secondary)] font-sans">Select a local .csv file</span>
                     <input
                       type="file"
@@ -562,7 +562,7 @@ export default function ActivityCodesMasterPage() {
 
                 {/* Direct Paste Area */}
                 <div className="flex flex-col gap-2">
-                  <span className="font-bold text-[var(--text-secondary)] uppercase tracking-wider text-[10px]">Option B: Copy-Paste Excel Cells Directly</span>
+                  <span className="font-extrabold text-[var(--text-secondary)] uppercase tracking-wider text-[10px]">Option B: Copy-Paste Excel Cells Directly</span>
                   <textarea
                     placeholder="Select cells from Excel, Copy, and Paste them here..."
                     value={csvText}
@@ -570,8 +570,7 @@ export default function ActivityCodesMasterPage() {
                       setCsvText(e.target.value);
                       handleParseCsv(e.target.value);
                     }}
-                    rows={6}
-                    className="w-full p-3 bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-[#5ebd56] rounded-lg text-[10px] text-[var(--text-primary)] placeholder-[var(--text-secondary)]/40 focus:outline-none resize-none h-36"
+                    className="w-full p-3.5 bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-[var(--primary-brand)] focus:ring-1 focus:ring-[var(--primary-brand)]/15 rounded-xl text-[11px] text-[var(--text-primary)] placeholder-[var(--text-secondary)]/40 focus:outline-none resize-none h-40 shadow-sm font-mono"
                   />
                 </div>
 
@@ -581,31 +580,31 @@ export default function ActivityCodesMasterPage() {
               {bulkPreview.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-[var(--text-primary)] uppercase tracking-wider text-[10px]">
+                    <span className="font-extrabold text-[var(--text-primary)] uppercase tracking-wider text-[10px]">
                       Live Data Preview ({bulkPreview.length} items detected)
                     </span>
-                    <span className="text-[9px] text-[#5ebd56] font-semibold">Parsed successfully!</span>
+                    <span className="text-[10px] text-[var(--primary-brand)] font-extrabold font-mono uppercase tracking-wider">Parsed successfully!</span>
                   </div>
 
-                  <div className="border border-[var(--border-color)] rounded-lg overflow-hidden max-h-48 overflow-y-auto">
-                    <table className="w-full text-left border-collapse text-[10px]">
+                  <div className="border border-[var(--border-color)] rounded-xl overflow-hidden max-h-48 overflow-y-auto shadow-sm">
+                    <table className="w-full text-left border-collapse text-[10px] font-mono">
                       <thead>
                         <tr className="bg-[var(--bg-input)] text-[var(--text-secondary)] font-bold uppercase tracking-wider border-b border-[var(--border-color)]">
-                          <th className="py-2 px-3 w-14">Category</th>
-                          <th className="py-2 px-3 w-20">Code</th>
-                          <th className="py-2 px-3">Main Activity</th>
-                          <th className="py-2 px-3">Sub Activity</th>
-                          <th className="py-2 px-3">Description</th>
+                          <th className="py-2.5 px-4 w-20">Category</th>
+                          <th className="py-2.5 px-4 w-24">Code</th>
+                          <th className="py-2.5 px-4">Main Activity</th>
+                          <th className="py-2.5 px-4">Sub Activity</th>
+                          <th className="py-2.5 px-4">Description</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-primary)] bg-[var(--bg-input)]/30">
+                      <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-primary)] bg-[var(--bg-card)]">
                         {bulkPreview.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-[var(--hover-bg)]/20 transition-all">
-                            <td className="py-1.5 px-3 font-bold text-[#5ebd56]">{row.categoryCode}</td>
-                            <td className="py-1.5 px-3 text-[var(--text-primary)]">{row.code}</td>
-                            <td className="py-1.5 px-3 truncate max-w-[120px] text-[var(--text-primary)]" title={row.mainActivity}>{row.mainActivity || "-"}</td>
-                            <td className="py-1.5 px-3 truncate max-w-[120px] text-[var(--text-secondary)]" title={row.subActivity}>{row.subActivity || "-"}</td>
-                            <td className="py-1.5 px-3 text-[var(--text-secondary)]/80 truncate max-w-[200px]" title={row.fullDescription}>{row.fullDescription}</td>
+                          <tr key={idx} className="hover:bg-[var(--hover-bg)]/40 transition-colors">
+                            <td className="py-2 px-4 font-extrabold text-[var(--primary-brand)]">{row.categoryCode}</td>
+                            <td className="py-2 px-4 font-bold text-[var(--text-primary)]">{row.code.toUpperCase()}</td>
+                            <td className="py-2 px-4 truncate max-w-[120px] font-sans font-semibold text-[var(--text-primary)]" title={row.mainActivity}>{row.mainActivity || "-"}</td>
+                            <td className="py-2 px-4 truncate max-w-[120px] font-sans font-medium text-[var(--text-secondary)]" title={row.subActivity}>{row.subActivity || "-"}</td>
+                            <td className="py-2 px-4 text-[var(--text-secondary)]/80 font-sans truncate max-w-[200px]" title={row.fullDescription}>{row.fullDescription}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -617,11 +616,11 @@ export default function ActivityCodesMasterPage() {
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex justify-end gap-3 p-5 border-t border-[var(--border-color)] bg-[var(--bg-sidebar)]/40">
+            <div className="flex justify-end gap-3 p-5 border-t border-[var(--border-color)] bg-[var(--bg-sidebar)]/10">
               <button
                 type="button"
                 onClick={() => setIsBulkOpen(false)}
-                className="px-4 py-2 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold rounded-lg text-xs transition-colors cursor-pointer uppercase tracking-wider"
+                className="px-4.5 py-2.5 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-extrabold rounded-lg text-xs transition-colors cursor-pointer uppercase tracking-wider font-mono shadow-sm"
               >
                 Cancel
               </button>
@@ -629,7 +628,7 @@ export default function ActivityCodesMasterPage() {
                 type="button"
                 onClick={handleBulkSubmit}
                 disabled={bulkLoading || bulkPreview.length === 0}
-                className="px-5 py-2 bg-[#5ebd56] hover:bg-[#53a74c] text-black font-extrabold rounded-lg text-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider flex items-center gap-1.5 shadow-[0_2px_8px_rgba(94,189,86,0.1)]"
+                className="px-5 py-2.5 bg-[var(--primary-brand)] hover:bg-[var(--primary-hover)] text-white font-extrabold rounded-lg text-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider flex items-center gap-2 shadow-sm font-mono"
               >
                 {bulkLoading ? (
                   <>
@@ -653,13 +652,14 @@ export default function ActivityCodesMasterPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
           <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl max-w-lg w-full overflow-hidden shadow-2xl relative">
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-5 border-b border-[var(--border-color)] bg-[var(--bg-sidebar)]/40">
-              <h3 className="font-bold text-sm uppercase tracking-wider text-[var(--text-primary)] font-mono">
+            <div className="flex justify-between items-center p-5 border-b border-[var(--border-sidebar)] bg-[var(--primary-brand)] text-white">
+              <h3 className="font-extrabold text-sm uppercase tracking-wider font-mono flex items-center gap-2">
+                <Hash className="w-4 h-4" />
                 {modalMode === "ADD" ? "Add New Activity Code" : "Edit Activity Code"}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 hover:bg-[var(--hover-bg)] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -680,7 +680,7 @@ export default function ActivityCodesMasterPage() {
                 <select
                   value={formCategoryCode}
                   onChange={(e) => setFormCategoryCode(e.target.value)}
-                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-[#5ebd56] font-sans cursor-pointer"
+                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary-brand)] focus:ring-1 focus:ring-[var(--primary-brand)]/15 font-sans cursor-pointer shadow-sm"
                 >
                   {categoryOptions.map((opt) => (
                     <option key={opt.code} value={opt.code} className="bg-[var(--bg-card)] text-[var(--text-primary)]">
@@ -699,7 +699,7 @@ export default function ActivityCodesMasterPage() {
                   value={formCode}
                   onChange={(e) => setFormCode(e.target.value)}
                   required
-                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/40 focus:outline-none focus:border-[#5ebd56] font-sans"
+                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/45 focus:outline-none focus:border-[var(--primary-brand)] focus:ring-1 focus:ring-[var(--primary-brand)]/15 font-sans shadow-sm"
                 />
               </div>
 
@@ -711,7 +711,7 @@ export default function ActivityCodesMasterPage() {
                   placeholder="e.g., Breakdown Mechanical"
                   value={formMainActivity}
                   onChange={(e) => setFormMainActivity(e.target.value)}
-                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/40 focus:outline-none focus:border-[#5ebd56] font-sans"
+                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/45 focus:outline-none focus:border-[var(--primary-brand)] focus:ring-1 focus:ring-[var(--primary-brand)]/15 font-sans shadow-sm"
                 />
               </div>
 
@@ -723,7 +723,7 @@ export default function ActivityCodesMasterPage() {
                   placeholder="e.g., Chain Sprocket Slipping"
                   value={formSubActivity}
                   onChange={(e) => setFormSubActivity(e.target.value)}
-                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/40 focus:outline-none focus:border-[#5ebd56] font-sans"
+                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/45 focus:outline-none focus:border-[var(--primary-brand)] focus:ring-1 focus:ring-[var(--primary-brand)]/15 font-sans shadow-sm"
                 />
               </div>
 
@@ -736,7 +736,7 @@ export default function ActivityCodesMasterPage() {
                   onChange={(e) => setFormFullDescription(e.target.value)}
                   required
                   rows={3}
-                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/40 focus:outline-none focus:border-[#5ebd56] font-sans resize-none"
+                  className="px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)]/45 focus:outline-none focus:border-[var(--primary-brand)] focus:ring-1 focus:ring-[var(--primary-brand)]/15 font-sans resize-none shadow-sm"
                 />
               </div>
 
@@ -745,13 +745,13 @@ export default function ActivityCodesMasterPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-semibold rounded-lg text-xs transition-all cursor-pointer font-mono"
+                  className="px-4.5 py-2.5 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-extrabold rounded-lg text-xs transition-all cursor-pointer font-mono shadow-sm uppercase tracking-wider"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#5ebd56] hover:bg-[#53a74c] text-black font-bold rounded-lg text-xs transition-all cursor-pointer font-mono shadow-[0_2px_8px_rgba(94,189,86,0.1)]"
+                  className="px-5 py-2.5 bg-[var(--primary-brand)] hover:bg-[var(--primary-hover)] text-white font-extrabold rounded-lg text-xs transition-all cursor-pointer font-mono shadow-sm uppercase tracking-wider"
                 >
                   {modalMode === "ADD" ? "Add Activity Code" : "Save Changes"}
                 </button>

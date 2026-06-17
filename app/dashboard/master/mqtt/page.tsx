@@ -444,6 +444,7 @@ export default function MqttConfigPage() {
               <thead>
                 <tr className="bg-[var(--bg-sidebar)]/30 border-b border-[var(--border-color)] text-[var(--text-secondary)] text-[9px] font-bold uppercase tracking-wider font-mono">
                   <th className="px-5 py-3">Nama Mesin</th>
+                  <th className="px-5 py-3 text-center">Status (0/1)</th>
                   <th className="px-5 py-3">Broker & Client ID</th>
                   <th className="px-5 py-3">Counter FG Sensor Topic</th>
                   <th className="px-5 py-3">Status Sensor Topic</th>
@@ -454,10 +455,17 @@ export default function MqttConfigPage() {
                 {mqttConfigs.map((config) => (
                   <tr key={config.id} className="hover:bg-[var(--hover-bg)]/20 transition-all border-b border-[var(--border-color)]/40 text-xs text-[var(--text-primary)]">
                     <td className="px-5 py-4 font-bold text-[var(--text-primary)]">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-[#5ebd56] shadow-[0_0_8px_#5ebd56]" />
-                        {config.machine?.name}
-                      </div>
+                      {config.machine?.name}
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border transition-all ${
+                        config.status === 1
+                          ? "bg-[#5ebd56]/10 text-[#5ebd56] border-[#5ebd56]/20 shadow-[0_2px_8px_rgba(94,189,86,0.05)]"
+                          : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${config.status === 1 ? "bg-[#5ebd56] animate-pulse" : "bg-rose-500"}`} />
+                        {config.status === 1 ? "1 - NYALA" : "0 - MATI"}
+                      </span>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex flex-col gap-1">
