@@ -87,7 +87,7 @@ async function register(req, res) {
         data: {
           email,
           password: hashedPassword,
-          role: role.toUpperCase(), // OWNER, MANAGER, OPERATOR
+          role: role.toUpperCase(), // SUPERVISOR, OPERATOR
           companyId: company.id,
         },
       });

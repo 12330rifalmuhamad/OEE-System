@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-const { db } = require("../lib/db");
 const { JWT_SECRET } = require("../lib/auth");
 
 async function authMiddleware(req, res, next) {
@@ -22,16 +21,14 @@ async function authMiddleware(req, res, next) {
       return res.status(401).json({ error: "Token tidak valid." });
     }
 
-    const user = await db.user.findUnique({
-      where: { id: decoded.userId },
-      include: { company: true },
-    });
+    // Set data user secara stateless dari payload token JWT
+    req.user = {
+      id: decoded.userId,
+      email: decoded.email,
+      role: decoded.role,
+      companyId: decoded.companyId,
+    };
 
-    if (!user) {
-      return res.status(401).json({ error: "User tidak ditemukan." });
-    }
-
-    req.user = user;
     next();
   } catch (error) {
     console.error("Auth Middleware Error:", error);
@@ -61,12 +58,14 @@ async function optionalAuth(req, res, next) {
       return next();
     }
 
-    const user = await db.user.findUnique({
-      where: { id: decoded.userId },
-      include: { company: true },
-    });
+    // Set data user secara stateless dari payload token JWT
+    req.user = {
+      id: decoded.userId,
+      email: decoded.email,
+      role: decoded.role,
+      companyId: decoded.companyId,
+    };
 
-    req.user = user || null;
     next();
   } catch (error) {
     req.user = null;

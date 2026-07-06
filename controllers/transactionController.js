@@ -1,5 +1,6 @@
 const { db } = require("../lib/db");
 const { recalculateOkpLogOee } = require("../lib/oeeHelper");
+const { machineStates } = require("../lib/mqttListener");
 
 async function getOkpLogs(req, res) {
   try {
@@ -187,7 +188,14 @@ async function adjustActivityLog(req, res) {
       return res.status(400).json({ error: "ID Aktivitas tidak valid." });
     }
 
-    const { activityCodeId, brRootCause, duration } = req.body;
+    const {
+      activityCodeId,
+      brRootCause,
+      duration,
+      brMtdtWaiting,
+      brMtdtRepair,
+      brMtdtStartup
+    } = req.body;
 
     if (!activityCodeId) {
       return res.status(400).json({ error: "Kode Aktivitas penyesuaian wajib diisi." });
@@ -214,6 +222,9 @@ async function adjustActivityLog(req, res) {
         activityCodeId: parseInt(activityCodeId, 10),
         brRootCause: brRootCause ? String(brRootCause).trim() : null,
         duration: duration !== undefined ? parseFloat(duration) : undefined,
+        brMtdtWaiting: brMtdtWaiting !== undefined ? parseFloat(brMtdtWaiting) : null,
+        brMtdtRepair: brMtdtRepair !== undefined ? parseFloat(brMtdtRepair) : null,
+        brMtdtStartup: brMtdtStartup !== undefined ? parseFloat(brMtdtStartup) : null,
         updatedBy: emailUser,
       },
       include: {
@@ -589,6 +600,90 @@ async function getActiveStoppage(req, res) {
   }
 }
 
+async function createManualActivityLog(req, res) {
+  try {
+    const {
+      okpLogId,
+      activityCodeId,
+      startTime,
+      endTime,
+      duration,
+      brRootCause,
+      brMtdtWaiting,
+      brMtdtRepair,
+      brMtdtStartup
+    } = req.body;
+
+    if (!okpLogId || !activityCodeId || !startTime) {
+      return res.status(400).json({ error: "Kolom OKP, Kode Aktivitas, dan Waktu Mulai wajib diisi." });
+    }
+
+    const emailUser = req.user?.email || "SYSTEM";
+
+    // 1. Resolve OKP
+    const okpLog = await db.okpLog.findUnique({
+      where: { id: parseInt(okpLogId, 10) }
+    });
+
+    if (!okpLog || okpLog.companyId !== req.user.companyId) {
+      return res.status(404).json({ error: "Transaksi OKP tidak ditemukan." });
+    }
+
+    // 2. Calculate duration if not provided
+    let calculatedDuration = parseFloat(duration);
+    if (isNaN(calculatedDuration) && endTime) {
+      const diffMs = new Date(endTime) - new Date(startTime);
+      calculatedDuration = parseFloat((diffMs / 60000).toFixed(2));
+    }
+
+    if (isNaN(calculatedDuration) || calculatedDuration < 0) {
+      calculatedDuration = 0;
+    }
+
+    // 3. Create the manual activity log
+    const newActivity = await db.activityLog.create({
+      data: {
+        okpLogId: parseInt(okpLogId, 10),
+        activityCodeId: parseInt(activityCodeId, 10),
+        startTime: new Date(startTime),
+        endTime: endTime ? new Date(endTime) : null,
+        duration: calculatedDuration,
+        brRootCause: brRootCause || null,
+        brMtdtWaiting: brMtdtWaiting !== undefined ? parseFloat(brMtdtWaiting) : null,
+        brMtdtRepair: brMtdtRepair !== undefined ? parseFloat(brMtdtRepair) : null,
+        brMtdtStartup: brMtdtStartup !== undefined ? parseFloat(brMtdtStartup) : null,
+        createdBy: emailUser,
+        updatedBy: emailUser
+      },
+      include: {
+        activityCode: {
+          include: { category: true }
+        }
+      }
+    });
+
+    // 4. Recalculate OEE metrics
+    await recalculateOkpLogOee(okpLog.id, db);
+
+    return res.status(201).json({
+      message: "Gangguan manual berhasil disimpan.",
+      activityLog: newActivity
+    });
+  } catch (error) {
+    console.error("POST Manual Activity Log Error:", error);
+    return res.status(500).json({ error: "Gagal menyimpan gangguan manual." });
+  }
+}
+
+async function getMachineStates(req, res) {
+  try {
+    return res.json({ machineStates });
+  } catch (error) {
+    console.error("GET Machine States Error:", error);
+    return res.status(500).json({ error: "Gagal mengambil status mesin." });
+  }
+}
+
 module.exports = {
   getOkpLogs,
   createOkpLog,
@@ -597,4 +692,6 @@ module.exports = {
   updateOkpLog,
   initiateOkpLog,
   getActiveStoppage,
+  createManualActivityLog,
+  getMachineStates,
 };

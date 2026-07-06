@@ -30,7 +30,7 @@ async function getOeeAnalytics(req, res) {
     }
 
     const whereClause = { companyId };
-    if (startDateParam || endDateParam) {
+    if ((startDateParam || endDateParam) && !okpParam) {
       whereClause.date = dateFilter;
     }
     if (okpParam) {
@@ -53,21 +53,12 @@ async function getOeeAnalytics(req, res) {
       whereClause.shift = parseInt(shiftParam, 10);
     }
 
-    // Fetch OKP logs
+    // 1. Fetch OKP logs WITHOUT activities (extremely lightweight and fast!)
     const okpLogs = await db.okpLog.findMany({
       where: whereClause,
       include: {
         product: true,
         machine: true,
-        activities: {
-          include: {
-            activityCode: {
-              include: {
-                category: true,
-              },
-            },
-          },
-        },
       },
     });
 
@@ -92,6 +83,25 @@ async function getOeeAnalytics(req, res) {
       });
     }
 
+    // 2. Fetch all activities for the filtered OKP logs in a separate optimized query
+    const paretoActivities = await db.activityLog.findMany({
+      where: {
+        okpLog: whereClause,
+      },
+      include: {
+        activityCode: {
+          include: {
+            category: true,
+          },
+        },
+      },
+      orderBy: [
+        { okpLogId: "asc" },
+        { startTime: "asc" },
+        { id: "asc" }
+      ]
+    });
+
     // Aggregates for company summary
     let totalLoadingTime = 0;
     let totalDowntime = 0;
@@ -113,75 +123,103 @@ async function getOeeAnalytics(req, res) {
     // Machine-specific stats
     const machineStats = {};
 
+    // 3. Process Pareto Activities in a flat loop (efficient and mathematically identical)
+    let lastActivityCategory = "";
+    let lastOkpId = null;
+
+    paretoActivities.forEach((act) => {
+      const categoryCode = act.activityCode.category.code;
+      const categoryName = act.activityCode.category.name;
+
+      // Reset consecutive tracking if we switch to a different OKP log
+      if (act.okpLogId !== lastOkpId) {
+        lastOkpId = act.okpLogId;
+        lastActivityCategory = "";
+      }
+
+      let actDuration = act.duration;
+      if (act.endTime === null) {
+        const startTime = act.startTime || act.createdAt || new Date();
+        actDuration = parseFloat(((new Date() - new Date(startTime)) / 60000).toFixed(2));
+        if (isNaN(actDuration) || actDuration < 0) {
+          actDuration = 0;
+        }
+      }
+
+      if (categoryCode !== "PR") {
+        if (!paretoCategories[categoryCode]) {
+          paretoCategories[categoryCode] = { minutes: 0, count: 0, name: categoryName };
+        }
+        paretoCategories[categoryCode].minutes += actDuration;
+        
+        // CONSECUTIVE SERIES RULE
+        if (categoryCode !== lastActivityCategory) {
+          paretoCategories[categoryCode].count += 1;
+          lastActivityCategory = categoryCode;
+        }
+      } else {
+        lastActivityCategory = "PR";
+      }
+    });
+
+    // 4. Process OEE metrics using pre-calculated database fields (avoids nested activity loops!)
     okpLogs.forEach((log) => {
-      // 1. Gather raw inputs from this OKP log
-      const loadingTime = log.loadingTime;
+      // Check if this OKP log has any active (running/stopped) activity (endTime is null) in paretoActivities
+      const hasActiveActivity = paretoActivities.some(
+        (act) => act.okpLogId === log.id && act.endTime === null
+      );
+
+      let currentLoadingTime = log.loadingTime;
+      if (hasActiveActivity) {
+        const startTime = log.date || log.createdAt;
+        const elapsedMinutes = (new Date() - new Date(startTime)) / 60000;
+        currentLoadingTime = Math.max(0.1, Math.min(log.loadingTime, elapsedMinutes));
+      }
+
       const actualOutput = log.totalOutput;
       const rework = log.rework;
       const reject = log.reject;
-      const stdSpeed = log.product.standarSpeed || 1; // Safeguard division
+      const stdSpeed = log.product.standarSpeed || 1;
 
-      // 2. Sort activities chronologically by startTime, falling back to id order
-      const sortedActivities = [...log.activities].sort((a, b) => {
-        if (a.startTime && b.startTime) {
-          return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
-        }
-        return a.id - b.id;
-      });
+      let logDowntime = log.downtime || 0;
+      let logMI = log.mi || 0;
+      let logOperatingTime = 0;
+      let logNetOperatingTime = 0;
+      let logPerformanceLoss = 0;
+      let logDefectLoss = 0;
+      let logValuedOperatingTime = 0;
 
-      // 3. Separate Downtime vs Minor Stoppages (MI)
-      let logDowntime = 0;
-      let logMI = 0;
-      let logDowntimeCount = 0;
-      let lastActivityCategory = "";
+      if (log.totalInput !== null) {
+        // Imported log
+        logOperatingTime = currentLoadingTime - logDowntime - logMI;
+        const pr = log.performance || 0;
+        logNetOperatingTime = (pr / 100) * logOperatingTime;
+        logPerformanceLoss = Math.max(0, logOperatingTime - logNetOperatingTime);
+        const qr = log.quality || 0;
+        logValuedOperatingTime = (qr / 100) * logNetOperatingTime;
+        logDefectLoss = Math.max(0, logNetOperatingTime - logValuedOperatingTime);
 
-      sortedActivities.forEach((act) => {
-        const categoryCode = act.activityCode.category.code;
-        const categoryName = act.activityCode.category.name;
-
-        let actDuration = act.duration;
-        if (act.endTime === null) {
-          const startTime = act.startTime || act.createdAt || new Date();
-          actDuration = parseFloat(((new Date() - new Date(startTime)) / 60000).toFixed(2));
-          if (isNaN(actDuration) || actDuration < 0) {
-            actDuration = 0;
-          }
-        }
-
-        if (categoryCode === "MI") {
-          logMI += actDuration;
-        } else if (categoryCode !== "PR") {
-          logDowntime += actDuration;
-        }
-
-        // Accumulate Pareto chart data (for any downtime loss or minor stoppages)
-        if (categoryCode !== "PR") {
+        // Accumulate Pareto chart data for imported log
+        if (logDowntime > 0) {
+          const categoryCode = "OT";
+          const categoryName = "Others (Imported)";
           if (!paretoCategories[categoryCode]) {
             paretoCategories[categoryCode] = { minutes: 0, count: 0, name: categoryName };
           }
-          paretoCategories[categoryCode].minutes += actDuration;
-          
-          // CONSECUTIVE SERIES RULE: If identical categories occur in series, their combined frequency = 1.
-          if (categoryCode !== lastActivityCategory) {
-            paretoCategories[categoryCode].count += 1;
-            logDowntimeCount += 1;
-            lastActivityCategory = categoryCode;
-          }
-        } else {
-          // If it is a PR (Uptime / Produksi Lancar) log, reset the consecutive sequence tracker
-          lastActivityCategory = "PR";
+          paretoCategories[categoryCode].minutes += logDowntime;
+          paretoCategories[categoryCode].count += 1;
         }
-      });
+      } else {
+        // Sensor-based log (using pre-calculated database columns!)
+        logOperatingTime = Math.max(0, currentLoadingTime - logDowntime - logMI);
+        logNetOperatingTime = actualOutput / stdSpeed;
+        logPerformanceLoss = Math.max(0, logOperatingTime - logNetOperatingTime);
+        logDefectLoss = (rework + reject) / stdSpeed;
+        logValuedOperatingTime = Math.max(0, logNetOperatingTime - logDefectLoss);
+      }
 
-      // 4. Apply Master Formulas per Row / OKP Log
-      const logOperatingTime = loadingTime - logDowntime - logMI;
-      const logNetOperatingTime = actualOutput / stdSpeed;
-      const logPerformanceLoss = Math.max(0, logOperatingTime - logNetOperatingTime);
-      const logDefectLoss = (rework + reject) / stdSpeed;
-      const logValuedOperatingTime = Math.max(0, logNetOperatingTime - logDefectLoss);
-
-      // 5. Accumulate totals
-      totalLoadingTime += loadingTime;
+      // Accumulate totals
+      totalLoadingTime += currentLoadingTime;
       totalDowntime += logDowntime;
       totalMI += logMI;
       totalOperatingTime += logOperatingTime;
@@ -195,7 +233,7 @@ async function getOeeAnalytics(req, res) {
       totalStdSpeed += stdSpeed;
       okpCount += 1;
 
-      // 6. Accumulate Machine stats
+      // Accumulate Machine stats
       if (!machineStats[log.machineId]) {
         machineStats[log.machineId] = {
           name: log.machine.name,
@@ -214,7 +252,7 @@ async function getOeeAnalytics(req, res) {
         };
       }
       const m = machineStats[log.machineId];
-      m.loading += loadingTime;
+      m.loading += currentLoadingTime;
       m.downtime += logDowntime;
       m.mi += logMI;
       m.operating += logOperatingTime;
@@ -225,14 +263,22 @@ async function getOeeAnalytics(req, res) {
       m.netOperating += logNetOperatingTime;
       m.defectLoss += logDefectLoss;
       m.valuedOperating += logValuedOperatingTime;
-      m.downtimeCount += logDowntimeCount;
     });
 
-    // 7. Calculate Aggregated Core Rates
-    const availabilityRate = totalLoadingTime > 0 ? (totalOperatingTime / totalLoadingTime) * 100 : 0;
-    const performanceRate = totalOperatingTime > 0 ? (totalNetOperatingTime / totalOperatingTime) * 100 : 0;
-    const qualityRate = totalNetOperatingTime > 0 ? (totalValuedOperatingTime / totalNetOperatingTime) * 100 : 0;
-    const oee = (availabilityRate / 100) * (performanceRate / 100) * (qualityRate / 100) * 100;
+    // Calculate Aggregated Core Rates
+    let availabilityRate = totalLoadingTime > 0 ? (totalOperatingTime / totalLoadingTime) * 100 : 0;
+    let performanceRate = totalOperatingTime > 0 ? (totalNetOperatingTime / totalOperatingTime) * 100 : 0;
+    let qualityRate = totalNetOperatingTime > 0 ? (totalValuedOperatingTime / totalNetOperatingTime) * 100 : 0;
+    let oee = (availabilityRate / 100) * (performanceRate / 100) * (qualityRate / 100) * 100;
+
+    // Overwrite for single OKP log response to prevent precision / rounding mismatch with database columns
+    if (okpLogs.length === 1) {
+      const singleLog = okpLogs[0];
+      availabilityRate = singleLog.availability !== null ? singleLog.availability : availabilityRate;
+      performanceRate = singleLog.performance !== null ? singleLog.performance : performanceRate;
+      qualityRate = singleLog.quality !== null ? singleLog.quality : qualityRate;
+      oee = singleLog.oee !== null ? singleLog.oee : oee;
+    }
 
     // Format Pareto Chart data
     const paretoData = Object.keys(paretoCategories)
@@ -244,7 +290,7 @@ async function getOeeAnalytics(req, res) {
       }))
       .sort((a, b) => b.minutes - a.minutes);
 
-    // Format Machine OEE breakdown list with Master Formula keys
+    // Format Machine OEE breakdown list
     const machineOeeData = Object.keys(machineStats).map((id) => {
       const m = machineStats[id];
       const mAvail = m.loading > 0 ? (m.operating / m.loading) * 100 : 0;
@@ -294,8 +340,18 @@ async function getOeeAnalytics(req, res) {
       });
       const latestOkp = sortedLogs[0];
 
+      // Fetch activities only for the latest OKP (incredibly fast, avoids massive nested join!)
+      const latestActivities = await db.activityLog.findMany({
+        where: { okpLogId: latestOkp.id },
+        include: {
+          activityCode: {
+            include: { category: true }
+          }
+        }
+      });
+
       // Check machine state
-      const activeActivity = latestOkp.activities.find(act => act.endTime === null);
+      const activeActivity = latestActivities.find(act => act.endTime === null);
       let status = "STOPPED";
       if (activeActivity) {
         status = activeActivity.activityCode.category.code === "PR" ? "RUNNING" : "STOPPED";
@@ -304,7 +360,7 @@ async function getOeeAnalytics(req, res) {
       // Calculate operating time for running time display
       let logDowntime = 0;
       let logMI = 0;
-      latestOkp.activities.forEach((act) => {
+      latestActivities.forEach((act) => {
         const categoryCode = act.activityCode.category.code;
         let actDuration = act.duration;
         if (act.endTime === null) {
@@ -333,6 +389,7 @@ async function getOeeAnalytics(req, res) {
       ].join(":");
 
       latestOkpDetails = {
+        id: latestOkp.id,
         okpNumber: latestOkp.okpNumber,
         productName: latestOkp.product.name,
         operator: latestOkp.operator || "SYSTEM",
@@ -363,6 +420,20 @@ async function getOeeAnalytics(req, res) {
       machineOee: machineOeeData,
       timeline: timelineData,
       latestOkp: latestOkpDetails,
+      okpLogs: okpLogs.map(log => ({
+        id: log.id,
+        okpNumber: log.okpNumber,
+        date: log.date.toISOString().split("T")[0],
+        shift: log.shift,
+        machineName: log.machine.name,
+        productName: log.product.name,
+        totalOutput: log.totalOutput,
+        availability: log.availability,
+        performance: log.performance,
+        quality: log.quality,
+        oee: log.oee,
+        downtime: log.downtime,
+      })),
     });
   } catch (error) {
     console.error("GET OEE Analytics Error:", error);

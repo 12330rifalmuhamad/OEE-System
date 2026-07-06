@@ -153,6 +153,22 @@ model OkpLog {
   reject       Float    @map("fltReject") // (Kg / Pcs)
   sampleQc     Float?   @map("fltSampleQc") // (FB)
 
+  // Granular OEE calculation fields
+  totalInput            Float?   @map("fltTotalInput")
+  jumlahBatch           Float?   @map("fltJumlahBatch")
+  reworkFlushingFlavour Float?   @map("fltReworkFlushingFlavour")
+  reworkFlushingBase    Float?   @map("fltReworkFlushingBase")
+  reworkSieve           Float?   @map("fltReworkSieve")
+  reworkFilling         Float?   @map("fltReworkFilling")
+  reworkEjector         Float?   @map("fltReworkEjector")
+  reworkPacking         Float?   @map("fltReworkPacking")
+  reworkOther           Float?   @map("fltReworkOther")
+  sample                Float?   @map("fltSample")
+  wetDry                String?  @map("txtWetDry")
+  categoryFocus         String?  @map("txtCategoryFocus")
+  categoryProd          String?  @map("txtCategoryProd")
+  yield                 Float?   @map("decYield")
+
   // Physical OEE calculation columns
   availability Float?   @map("decAvailability")
   performance  Float?   @map("decPerformance")
@@ -287,3 +303,59 @@ model LineProcess {
 
   @@map("mLineProcess")
 }
+
+// 8. OEE RBAC & MENU MANAGEMENT (Frontend Dynamic Menus & Roles)
+model OeeLevel {
+  id           Int             @id @default(autoincrement()) @map("intidlevel")
+  name         String          @map("txtnamalevel")
+  roles        OeeRole[]
+  accessMenus  OeeAccessMenu[]
+
+  @@map("mleveloees")
+}
+
+model OeeRole {
+  id        Int      @id @default(autoincrement()) @map("intidrole")
+  userId    Int      @map("intiduser")
+  levelId   Int      @map("intidlevel")
+  level     OeeLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
+
+  @@map("mroleoees")
+}
+
+model OeeMenu {
+  id          Int             @id @default(autoincrement()) @map("intidmenu")
+  name        String          @map("txtnamamenu")
+  icon        String?         @map("txticon")
+  isActive    Int             @default(1) @map("intisactivemenu")
+  sorter      Int             @map("intsortermenu")
+  submenus    OeeSubmenu[]
+  accessMenus OeeAccessMenu[]
+
+  @@map("mmenuoees")
+}
+
+model OeeSubmenu {
+  id       Int     @id @default(autoincrement()) @map("intidsubmenu")
+  menuId   Int     @map("intidmenu")
+  menu     OeeMenu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  name     String  @map("txtnamasubmenu")
+  url      String? @map("txturl")
+  route    String? @map("txtroute")
+  icon     String? @map("txticonsubmenu")
+  isActive Int     @default(1) @map("intisactivesubmenu")
+  sorter   Int     @map("intsortersubmenu")
+
+  @@map("msubmenuoees")
+}
+
+model OeeAccessMenu {
+  id      Int      @id @default(autoincrement()) @map("intidaccessmenu")
+  levelId Int      @map("intidlevel")
+  level   OeeLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  menuId  Int      @map("intidmenu")
+  menu    OeeMenu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@map("maccessmenuoees")
+}
+

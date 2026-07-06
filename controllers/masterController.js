@@ -21,8 +21,8 @@ async function getMachines(req, res) {
 
 async function createMachine(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const { name } = req.body;
@@ -45,8 +45,8 @@ async function createMachine(req, res) {
 
 async function updateMachine(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const idInt = parseInt(req.params.id, 10);
@@ -76,8 +76,8 @@ async function updateMachine(req, res) {
 
 async function deleteMachine(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const idInt = parseInt(req.params.id, 10);
@@ -120,8 +120,8 @@ async function getProducts(req, res) {
 
 async function createProduct(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const { productCode, name, size, standarSpeed } = req.body;
@@ -148,8 +148,8 @@ async function createProduct(req, res) {
 
 async function updateProduct(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const idInt = parseInt(req.params.id, 10);
@@ -182,8 +182,8 @@ async function updateProduct(req, res) {
 
 async function deleteProduct(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const idInt = parseInt(req.params.id, 10);
@@ -227,8 +227,8 @@ async function getActivityCodes(req, res) {
 
 async function createActivityCode(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const { categoryCode, code, mainActivity, subActivity, fullDescription } = req.body;
@@ -265,8 +265,8 @@ async function createActivityCode(req, res) {
 
 async function updateActivityCode(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const idInt = parseInt(req.params.id, 10);
@@ -311,8 +311,8 @@ async function updateActivityCode(req, res) {
 
 async function deleteActivityCode(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const idInt = parseInt(req.params.id, 10);
@@ -338,8 +338,8 @@ async function deleteActivityCode(req, res) {
 
 async function bulkCreateActivityCodes(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const { codes } = req.body;
@@ -457,8 +457,8 @@ async function getMqttConfigs(req, res) {
 
 async function saveMqttConfig(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const {
@@ -536,8 +536,8 @@ async function saveMqttConfig(req, res) {
 
 async function deleteMqttConfig(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const idInt = parseInt(req.params.id, 10);
@@ -598,8 +598,8 @@ async function getKpiTarget(req, res) {
 
 async function saveKpiTarget(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const { oeeTarget, availTarget, perfTarget, qualTarget } = req.body;
@@ -654,8 +654,8 @@ async function getEmployees(req, res) {
 
 async function createEmployee(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const { email, password, role } = req.body;
@@ -664,8 +664,8 @@ async function createEmployee(req, res) {
     }
 
     const roleUpper = role.toUpperCase();
-    if (roleUpper !== "OWNER" && roleUpper !== "MANAGER" && roleUpper !== "OPERATOR") {
-      return res.status(400).json({ error: "Role tidak valid. Gunakan OWNER, MANAGER, atau OPERATOR." });
+    if (roleUpper !== "SUPERVISOR" && roleUpper !== "OPERATOR") {
+      return res.status(400).json({ error: "Role tidak valid. Gunakan SUPERVISOR atau OPERATOR." });
     }
 
     const existingUser = await db.user.findUnique({
@@ -702,8 +702,8 @@ async function createEmployee(req, res) {
 
 async function updateEmployee(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const idInt = parseInt(req.params.id, 10);
@@ -720,8 +720,8 @@ async function updateEmployee(req, res) {
     let roleUpper = existingEmployee.role;
     if (role) {
       roleUpper = role.toUpperCase();
-      if (roleUpper !== "OWNER" && roleUpper !== "MANAGER" && roleUpper !== "OPERATOR") {
-        return res.status(400).json({ error: "Role tidak valid." });
+      if (roleUpper !== "SUPERVISOR" && roleUpper !== "OPERATOR") {
+        return res.status(400).json({ error: "Role tidak valid. Gunakan SUPERVISOR atau OPERATOR." });
       }
     }
 
@@ -762,8 +762,8 @@ async function updateEmployee(req, res) {
 
 async function deleteEmployee(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const idInt = parseInt(req.params.id, 10);
@@ -815,8 +815,8 @@ async function getLineProcesses(req, res) {
 
 async function createLineProcess(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const { name, machineIds } = req.body;
@@ -861,8 +861,8 @@ async function createLineProcess(req, res) {
 
 async function updateLineProcess(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const idInt = parseInt(req.params.id, 10);
@@ -927,8 +927,8 @@ async function updateLineProcess(req, res) {
 
 async function deleteLineProcess(req, res) {
   try {
-    if (req.user.role !== "OWNER" && req.user.role !== "MANAGER") {
-      return res.status(403).json({ error: "Hanya OWNER atau MANAGER yang diizinkan." });
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
     const idInt = parseInt(req.params.id, 10);

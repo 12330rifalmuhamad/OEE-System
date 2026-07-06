@@ -10,6 +10,7 @@ const dmsRoutes = require("./routes/dmsRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const seedRoutes = require("./routes/seedRoutes");
 const { initMqttListeners } = require("./lib/mqttListener");
+const { startOeeRealTimeTicker } = require("./lib/oeeHelper");
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -38,6 +39,17 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
+
+// Custom HTTP request and response logger
+app.use((req, res, next) => {
+  console.log(`[HTTP] ${req.method} ${req.url}`);
+  const originalJson = res.json;
+  res.json = function (data) {
+    console.log(`[HTTP Response] ${res.statusCode} for ${req.method} ${req.url}:`, JSON.stringify(data));
+    return originalJson.apply(this, arguments);
+  };
+  next();
+});
 
 // Root endpoint for simple health-check
 app.get("/", (req, res) => {
@@ -80,5 +92,10 @@ app.listen(PORT, () => {
   // Trigger MQTT background telemetry listeners on startup
   initMqttListeners().catch((err) => {
     console.error("[MQTT-BOOT] Failed to boot background telemetry listeners on startup:", err);
+  });
+
+  // Start periodic real-time OEE recalculation ticker
+  startOeeRealTimeTicker().catch((err) => {
+    console.error("[TICKER-BOOT] Failed to start OEE real-time ticker on startup:", err);
   });
 });

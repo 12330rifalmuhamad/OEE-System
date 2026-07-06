@@ -7,6 +7,90 @@
       "info": "Simulasi 5 Mesin pada Lini Produksi A4 dengan keluaran Status (1/0) dan Counter (1)."
     },
     {
+      "id": "initiate_okp_inject",
+      "type": "inject",
+      "z": "oee_sim_tab",
+      "name": "Trigger Initiate OKP",
+      "props": [
+        {
+          "p": "payload"
+        }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": 0.1,
+      "topic": "",
+      "payloadType": "date",
+      "x": 160,
+      "y": 40,
+      "wires": [
+        [
+          "initiate_okp_payload"
+        ]
+      ]
+    },
+    {
+      "id": "initiate_okp_payload",
+      "type": "function",
+      "z": "oee_sim_tab",
+      "name": "Set OKP Payload",
+      "func": "const today = new Date();\nconst okpNum = \"OKP-RED-\" + today.getFullYear() + String(today.getMonth() + 1).padStart(2, '0') + String(today.getDate()).padStart(2, '0') + \"-\" + Math.floor(Math.random() * 1000);\nmsg.payload = {\n    okpNumber: okpNum,\n    machineName: \"Filling Line A4\",\n    shift: 1,\n    loadingTime: 480\n};\nmsg.headers = {\n    \"Content-Type\": \"application/json\"\n};\nreturn msg;",
+      "outputs": 1,
+      "noerr": 0,
+      "initialize": "",
+      "finalize": "",
+      "libs": [],
+      "x": 410,
+      "y": 40,
+      "wires": [
+        [
+          "initiate_okp_http"
+        ]
+      ]
+    },
+    {
+      "id": "initiate_okp_http",
+      "type": "http request",
+      "z": "oee_sim_tab",
+      "name": "POST /api/transactions/okp/initiate",
+      "method": "POST",
+      "ret": "obj",
+      "url": "http://localhost:5001/api/transactions/okp/initiate",
+      "encrypt": false,
+      "tls": "",
+      "persist": false,
+      "proxy": "",
+      "insecureHTTPParser": false,
+      "authType": "",
+      "senderr": false,
+      "headers": [],
+      "x": 700,
+      "y": 40,
+      "wires": [
+        [
+          "initiate_okp_debug"
+        ]
+      ]
+    },
+    {
+      "id": "initiate_okp_debug",
+      "type": "debug",
+      "z": "oee_sim_tab",
+      "name": "Initiate Debug",
+      "active": true,
+      "tosidebar": true,
+      "console": false,
+      "tostatus": false,
+      "complete": "payload",
+      "targetType": "msg",
+      "statusVal": "",
+      "statusType": "auto",
+      "x": 950,
+      "y": 40,
+      "wires": []
+    },
+    {
       "id": "mqtt_local_broker",
       "type": "mqtt-broker",
       "name": "HiveMQ Public Broker",

@@ -74,4 +74,52 @@ router.post("/line-processes", createLineProcess);
 router.put("/line-processes/:id", updateLineProcess);
 router.delete("/line-processes/:id", deleteLineProcess);
 
+// ==========================================
+// OEE RBAC & MENU ROUTES (API-driven)
+// ==========================================
+const {
+  getOeeLevels,
+  getOeeLevelById,
+  saveOeeLevel,
+  deleteOeeLevel,
+  getOeeRoles,
+  toggleOeeRole,
+  getOeeMenus,
+  getOeeMenuById,
+  saveOeeMenu,
+  deleteOeeMenu,
+  getOeeSubmenus,
+  getOeeSubmenuById,
+  saveOeeSubmenu,
+  deleteOeeSubmenu,
+  getOeeAccessMenusByLevel,
+  toggleOeeAccessMenu,
+} = require("../controllers/oeeRbacController");
+
+// OEE Levels
+router.get("/oee-levels", getOeeLevels);
+router.get("/oee-levels/:id", getOeeLevelById);
+router.post("/oee-levels", saveOeeLevel);
+router.delete("/oee-levels/:id", deleteOeeLevel);
+
+// OEE Roles
+router.get("/oee-roles", getOeeRoles);
+router.post("/oee-roles/toggle", toggleOeeRole);
+
+// OEE Menus
+router.get("/oee-menus", getOeeMenus);
+router.get("/oee-menus/:id", getOeeMenuById);
+router.post("/oee-menus", saveOeeMenu);
+router.delete("/oee-menus/:id", deleteOeeMenu);
+
+// OEE Submenus
+router.get("/oee-submenus", getOeeSubmenus);
+router.get("/oee-submenus/:id", getOeeSubmenuById);
+router.post("/oee-submenus", saveOeeSubmenu);
+router.delete("/oee-submenus/:id", deleteOeeSubmenu);
+
+// OEE Access Menus
+router.get("/oee-access-menus/:levelId", getOeeAccessMenusByLevel);
+router.post("/oee-access-menus/toggle", toggleOeeAccessMenu);
+
 module.exports = router;
