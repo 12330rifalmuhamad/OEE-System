@@ -169,6 +169,46 @@ model OkpLog {
   categoryProd          String?  @map("txtCategoryProd")
   yield                 Float?   @map("decYield")
 
+  // Granular packaging & logbook fields
+  box                   Float?   @map("fltBox")
+  cartonCode            String?  @map("txtCartonCode")
+  expireDate            DateTime? @map("dtmExpireDate")
+  noCartonAwal          Int?     @map("intNoCartonAwal")
+  noCartonAkhir         Int?     @map("intNoCartonAkhir")
+  fgBtlSachet           Float?   @map("fltFgBtlSachet")
+  totalFgTargetCtn      Float?   @map("fltTotalFgTargetCtn")
+  casingMdfTarget       Float?   @map("fltCasingMdfTarget")
+  mdfTarget             Float?   @map("fltMdfTarget")
+  casingNnsTarget       Float?   @map("fltCasingNnsTarget")
+  nnsTarget             Float?   @map("fltNnsTarget")
+  mppCount              Float?   @map("fltMppCount")
+  tempoMin              Float?   @map("fltTempoMin")
+
+  // Reject Breakdown
+  rejectSachet          Float?   @map("fltRejectSachet")
+  rejectPlastik         Float?   @map("fltRejectPlastik")
+  rejectFoil            Float?   @map("fltRejectFoil")
+  rejectCarton          Float?   @map("fltRejectCarton")
+
+  // Material Reconciliation (Plastik)
+  plastikLembar         Float?   @map("fltPlastikLembar")
+  plastikKg             Float?   @map("fltPlastikKg")
+  plastikSisa           Float?   @map("fltPlastikSisa")
+  plastikHasil          Float?   @map("fltPlastikHasil")
+
+  // Material Reconciliation (Carton)
+  cartonPcs             Float?   @map("fltCartonPcs")
+  cartonLembar          Float?   @map("fltCartonLembar")
+  cartonSisa            Float?   @map("fltCartonSisa")
+  cartonHasil           Float?   @map("fltCartonHasil")
+
+  // Outer Roll reconciliations
+  totalPemakaian        Float?   @map("fltTotalPemakaian")
+  oneRollSachet         Float?   @map("fltOneRollSachet")
+  outsetRoll            Float?   @map("fltOutsetRoll")
+  inputKembaliOkp       Float?   @map("fltInputKembaliOkp")
+  rejectKembaliOkp      Float?   @map("fltRejectKembaliOkp")
+
   // Physical OEE calculation columns
   availability Float?   @map("decAvailability")
   performance  Float?   @map("decPerformance")

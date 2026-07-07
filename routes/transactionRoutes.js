@@ -12,7 +12,7 @@ const {
   createManualActivityLog,
   getMachineStates,
 } = require("../controllers/transactionController");
-const { parseAndImportOkpLogs } = require("../controllers/importController");
+const { parseAndImportOkpLogs, importPackagingLogs } = require("../controllers/importController");
 
 const router = express.Router();
 
@@ -25,6 +25,7 @@ router.get("/realtime/machine-states", optionalAuth, getMachineStates);
 router.get("/okp", optionalAuth, getOkpLogs);
 router.post("/okp", authMiddleware, createOkpLog);
 router.post("/okp/import", optionalAuth, parseAndImportOkpLogs);
+router.post("/okp/import-packaging", optionalAuth, importPackagingLogs);
 router.post("/okp/initiate", optionalAuth, initiateOkpLog);
 router.get("/okp/:id", optionalAuth, getOkpLogDetail);
 router.put("/okp/:id", authMiddleware, updateOkpLog);
