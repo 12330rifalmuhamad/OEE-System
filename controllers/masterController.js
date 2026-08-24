@@ -10,6 +10,7 @@ async function getMachines(req, res) {
   try {
     const machines = await db.machine.findMany({
       where: { companyId: req.user.companyId },
+      include: { lineProcess: true },
       orderBy: { name: "asc" },
     });
     return res.json({ machines });
@@ -25,7 +26,7 @@ async function createMachine(req, res) {
       return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
-    const { name } = req.body;
+    const { name, lineProcessId } = req.body;
     if (!name) {
       return res.status(400).json({ error: "Nama mesin wajib diisi." });
     }
@@ -34,7 +35,9 @@ async function createMachine(req, res) {
       data: {
         companyId: req.user.companyId,
         name,
+        lineProcessId: lineProcessId ? parseInt(lineProcessId, 10) : null,
       },
+      include: { lineProcess: true },
     });
     return res.status(201).json({ message: "Mesin berhasil ditambahkan.", machine });
   } catch (error) {
@@ -50,7 +53,7 @@ async function updateMachine(req, res) {
     }
 
     const idInt = parseInt(req.params.id, 10);
-    const { name } = req.body;
+    const { name, lineProcessId } = req.body;
 
     const existingMachine = await db.machine.findFirst({
       where: { id: idInt, companyId: req.user.companyId },
@@ -64,7 +67,9 @@ async function updateMachine(req, res) {
       where: { id: idInt },
       data: {
         name: name !== undefined ? name : existingMachine.name,
+        lineProcessId: lineProcessId !== undefined ? (lineProcessId ? parseInt(lineProcessId, 10) : null) : existingMachine.lineProcessId,
       },
+      include: { lineProcess: true },
     });
 
     return res.json({ message: "Mesin berhasil diperbarui.", machine: updatedMachine });
@@ -109,6 +114,18 @@ async function getProducts(req, res) {
   try {
     const products = await db.product.findMany({
       where: { companyId: req.user.companyId },
+      include: {
+        lineProcess: true,
+        machineSpeeds: {
+          include: {
+            machine: {
+              include: {
+                lineProcess: true
+              }
+            }
+          }
+        },
+      },
       orderBy: { name: "asc" },
     });
     return res.json({ products });
@@ -124,19 +141,100 @@ async function createProduct(req, res) {
       return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
     }
 
-    const { productCode, name, size, standarSpeed } = req.body;
-    if (!name || standarSpeed === undefined) {
-      return res.status(400).json({ error: "Nama produk dan standar speed wajib diisi." });
+    const {
+      isActive,
+      lineProcessId,
+      articleCode,
+      productCode,
+      name,
+      lineCode,
+      size,
+      sizeGram,
+      batchSizeKg,
+      pcsPerCarton,
+      netFill,
+      processCategory,
+      focusCategory,
+      productCategory,
+      stdSpeedFbMin,
+      stdSpeedFilling,
+      stdSpeedCbMin,
+      stdSpeedBinShift,
+      stdBatchCb,
+      stdBatchMin,
+      standarSpeed,
+      speedCasepackerCb,
+      totalBinPerShift,
+      jumlahManpower,
+      remarks,
+      speeds
+    } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: "Nama produk wajib diisi." });
+    }
+
+    // Parse speeds
+    const machineSpeedsData = [];
+    if (speeds && typeof speeds === 'object') {
+      for (const [mId, val] of Object.entries(speeds)) {
+        const parsedVal = parseFloat(val);
+        if (!isNaN(parsedVal) && parsedVal > 0) {
+          machineSpeedsData.push({
+            machineId: parseInt(mId, 10),
+            speed: parsedVal
+          });
+        }
+      }
+    }
+
+    let parsedStandarSpeed = parseFloat(stdSpeedFilling || standarSpeed);
+    if (isNaN(parsedStandarSpeed)) {
+      if (machineSpeedsData.length > 0) {
+        parsedStandarSpeed = machineSpeedsData[0].speed;
+      } else {
+        parsedStandarSpeed = 120;
+      }
     }
 
     const product = await db.product.create({
       data: {
         companyId: req.user.companyId,
+        isActive: isActive !== undefined ? Boolean(isActive) : true,
+        lineProcessId: lineProcessId ? parseInt(lineProcessId, 10) : null,
+        articleCode: articleCode || null,
         productCode: productCode || null,
         name,
+        lineCode: lineCode || null,
         size: size || null,
-        standarSpeed: parseFloat(standarSpeed),
+        batchSizeKg: batchSizeKg ? parseFloat(batchSizeKg) : null,
+        pcsPerCarton: pcsPerCarton ? parseInt(pcsPerCarton, 10) : null,
+        netFill: netFill ? parseInt(netFill, 10) : null,
+        processCategory: processCategory || null,
+        focusCategory: focusCategory || null,
+        productCategory: productCategory || null,
+        stdSpeedFbMin: stdSpeedFbMin ? parseFloat(stdSpeedFbMin) : null,
+        stdSpeedFilling: stdSpeedFilling ? parseFloat(stdSpeedFilling) : null,
+        stdSpeedCbMin: stdSpeedCbMin ? parseFloat(stdSpeedCbMin) : null,
+        stdSpeedBinShift: stdSpeedBinShift ? parseFloat(stdSpeedBinShift) : null,
+        stdBatchCb: stdBatchCb ? parseFloat(stdBatchCb) : null,
+        stdBatchMin: stdBatchMin ? parseFloat(stdBatchMin) : null,
+        machineSpeeds: {
+          create: machineSpeedsData
+        }
       },
+      include: {
+        lineProcess: true,
+        machineSpeeds: {
+          include: {
+            machine: {
+              include: {
+                lineProcess: true
+              }
+            }
+          }
+        }
+      }
     });
 
     return res.status(201).json({ message: "Produk berhasil ditambahkan.", product });
@@ -153,7 +251,34 @@ async function updateProduct(req, res) {
     }
 
     const idInt = parseInt(req.params.id, 10);
-    const { productCode, name, size, standarSpeed } = req.body;
+    const {
+      isActive,
+      lineProcessId,
+      articleCode,
+      productCode,
+      name,
+      lineCode,
+      size,
+      sizeGram,
+      batchSizeKg,
+      pcsPerCarton,
+      netFill,
+      processCategory,
+      focusCategory,
+      productCategory,
+      stdSpeedFbMin,
+      stdSpeedFilling,
+      stdSpeedCbMin,
+      stdSpeedBinShift,
+      stdBatchCb,
+      stdBatchMin,
+      standarSpeed,
+      speedCasepackerCb,
+      totalBinPerShift,
+      jumlahManpower,
+      remarks,
+      speeds
+    } = req.body;
 
     const existingProduct = await db.product.findFirst({
       where: { id: idInt, companyId: req.user.companyId },
@@ -163,17 +288,91 @@ async function updateProduct(req, res) {
       return res.status(404).json({ error: "Produk tidak ditemukan." });
     }
 
-    const updatedProduct = await db.product.update({
+    let parsedStandarSpeed = parseFloat(stdSpeedFilling || standarSpeed);
+    if (isNaN(parsedStandarSpeed)) {
+      if (speeds && typeof speeds === 'object') {
+        const validVals = Object.values(speeds).map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0);
+        if (validVals.length > 0) {
+          parsedStandarSpeed = validVals[0];
+        } else {
+          parsedStandarSpeed = existingProduct.standarSpeed;
+        }
+      } else {
+        parsedStandarSpeed = existingProduct.standarSpeed;
+      }
+    }
+
+    // Update main product details
+    await db.product.update({
       where: { id: idInt },
       data: {
+        isActive: isActive !== undefined ? Boolean(isActive) : existingProduct.isActive,
+        lineProcessId: lineProcessId !== undefined ? (lineProcessId ? parseInt(lineProcessId, 10) : null) : existingProduct.lineProcessId,
+        articleCode: articleCode !== undefined ? articleCode : existingProduct.articleCode,
         productCode: productCode !== undefined ? productCode : existingProduct.productCode,
         name: name !== undefined ? name : existingProduct.name,
-        size: size !== undefined ? size : existingProduct.size,
-        standarSpeed: standarSpeed !== undefined ? parseFloat(standarSpeed) : existingProduct.standarSpeed,
+        lineCode: lineCode !== undefined ? lineCode : existingProduct.lineCode,
+        batchSizeKg: batchSizeKg !== undefined ? (batchSizeKg ? parseFloat(batchSizeKg) : null) : existingProduct.batchSizeKg,
+        pcsPerCarton: pcsPerCarton !== undefined ? (pcsPerCarton ? parseInt(pcsPerCarton, 10) : null) : existingProduct.pcsPerCarton,
+        netFill: netFill !== undefined ? (netFill ? parseInt(netFill, 10) : null) : existingProduct.netFill,
+        processCategory: processCategory !== undefined ? processCategory : existingProduct.processCategory,
+        focusCategory: focusCategory !== undefined ? focusCategory : existingProduct.focusCategory,
+        productCategory: productCategory !== undefined ? productCategory : existingProduct.productCategory,
+        stdSpeedFbMin: stdSpeedFbMin !== undefined ? (stdSpeedFbMin ? parseFloat(stdSpeedFbMin) : null) : existingProduct.stdSpeedFbMin,
+        stdSpeedFilling: stdSpeedFilling !== undefined ? (stdSpeedFilling ? parseFloat(stdSpeedFilling) : null) : existingProduct.stdSpeedFilling,
+        stdSpeedCbMin: stdSpeedCbMin !== undefined ? (stdSpeedCbMin ? parseFloat(stdSpeedCbMin) : null) : existingProduct.stdSpeedCbMin,
+        stdSpeedBinShift: stdSpeedBinShift !== undefined ? (stdSpeedBinShift ? parseFloat(stdSpeedBinShift) : null) : existingProduct.stdSpeedBinShift,
+        stdBatchCb: stdBatchCb !== undefined ? (stdBatchCb ? parseFloat(stdBatchCb) : null) : existingProduct.stdBatchCb,
+        stdBatchMin: stdBatchMin !== undefined ? (stdBatchMin ? parseFloat(stdBatchMin) : null) : existingProduct.stdBatchMin,
       },
     });
 
-    return res.json({ message: "Produk berhasil diperbarui.", product: updatedProduct });
+    // If speeds are provided, update them by deleting existing and inserting new
+    if (speeds !== undefined) {
+      // Delete existing speeds for this product
+      await db.productMachineSpeed.deleteMany({
+        where: { productId: idInt }
+      });
+
+      if (speeds && typeof speeds === 'object') {
+        const machineSpeedsData = [];
+        for (const [mId, val] of Object.entries(speeds)) {
+          const parsedVal = parseFloat(val);
+          if (!isNaN(parsedVal) && parsedVal > 0) {
+            machineSpeedsData.push({
+              productId: idInt,
+              machineId: parseInt(mId, 10),
+              speed: parsedVal
+            });
+          }
+        }
+
+        if (machineSpeedsData.length > 0) {
+          await db.productMachineSpeed.createMany({
+            data: machineSpeedsData
+          });
+        }
+      }
+    }
+
+    // Re-fetch the product with the updated machine speeds to return
+    const finalProduct = await db.product.findUnique({
+      where: { id: idInt },
+      include: {
+        lineProcess: true,
+        machineSpeeds: {
+          include: {
+            machine: {
+              include: {
+                lineProcess: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    return res.json({ message: "Produk berhasil diperbarui.", product: finalProduct });
   } catch (error) {
     console.error("PUT Product Error:", error);
     return res.status(500).json({ error: "Gagal memperbarui produk." });
@@ -204,6 +403,132 @@ async function deleteProduct(req, res) {
   } catch (error) {
     console.error("DELETE Product Error:", error);
     return res.status(500).json({ error: "Gagal menghapus produk. Kemungkinan data produk ini masih direferensikan oleh tabel transaksi lain." });
+  }
+}
+
+function parseSafeFloat(val) {
+  if (val === null || val === undefined || val === '') return null;
+  const str = String(val).trim();
+  if (str === '' || str === '-' || str.toLowerCase() === 'null' || str.toLowerCase() === 'n/a') return null;
+  const cleaned = str.replace(/,/g, '').replace(/[^0-9.-]/g, '');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? null : num;
+}
+
+function parseSafeInt(val) {
+  if (val === null || val === undefined || val === '') return null;
+  const str = String(val).trim();
+  if (str === '' || str === '-' || str.toLowerCase() === 'null' || str.toLowerCase() === 'n/a') return null;
+  const cleaned = str.replace(/,/g, '').replace(/[^0-9-]/g, '');
+  const num = parseInt(cleaned, 10);
+  return isNaN(num) ? null : num;
+}
+
+function isRealIdentifier(val) {
+  if (!val) return false;
+  const str = String(val).trim();
+  if (str === '' || str === '-' || str === '--' || str.toLowerCase() === 'n/a' || str.toLowerCase() === 'null' || str.toLowerCase() === 'undefined') return false;
+  return true;
+}
+
+async function bulkCreateProducts(req, res) {
+  try {
+    if (req.user.role !== "SUPERVISOR") {
+      return res.status(403).json({ error: "Hanya SUPERVISOR yang diizinkan." });
+    }
+
+    const { products } = req.body;
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ error: "Data produk kosong atau tidak valid." });
+    }
+
+    // Get all line processes for company to match by name or id
+    const lineProcesses = await db.lineProcess.findMany({
+      where: { companyId: req.user.companyId }
+    });
+    const lineMapByName = new Map(lineProcesses.map(l => [l.name.toLowerCase().trim(), l.id]));
+    const lineMapById = new Set(lineProcesses.map(l => l.id));
+
+    let createdCount = 0;
+    let updatedCount = 0;
+    let errorCount = 0;
+    const errors = [];
+
+    for (let i = 0; i < products.length; i++) {
+      try {
+        const item = products[i];
+        const name = item.name || item.productName || item.txtProductName;
+        const productCode = item.productCode || item.code || item.txtProductCode;
+
+        if (!name || name.toString().trim() === '') {
+          errorCount++;
+          errors.push(`Baris ${i + 1}: Nama Produk (txtProductName) kosong.`);
+          continue;
+        }
+
+        // Determine lineProcessId
+        let lineProcessId = null;
+        if (item.lineProcessId && lineMapById.has(parseInt(item.lineProcessId, 10))) {
+          lineProcessId = parseInt(item.lineProcessId, 10);
+        } else if (item.lineProcessName) {
+          const inputLine = item.lineProcessName.toString().toLowerCase().trim();
+          const matchedId = lineMapByName.get(inputLine);
+          if (matchedId) {
+            lineProcessId = matchedId;
+          } else {
+            for (const [nameKey, idVal] of lineMapByName.entries()) {
+              if (nameKey.includes(inputLine) || inputLine.includes(nameKey)) {
+                lineProcessId = idVal;
+                break;
+              }
+            }
+          }
+        }
+
+        const productPayload = {
+          companyId: req.user.companyId,
+          lineProcessId,
+          articleCode: item.articleCode || item.artCode || item.txtArtCode || null,
+          productCode: productCode ? productCode.toString().trim() : null,
+          name: name.toString().trim(),
+          lineCode: item.lineCode || item.txtLineCode || null,
+          batchSizeKg: parseSafeFloat(item.batchSizeKg || item.batchSize || item.floatBatchSizeBin),
+          pcsPerCarton: parseSafeInt(item.pcsPerCarton || item.qtyPcsCarton || item.intQtyPcsCarton),
+          netFill: parseSafeInt(item.netFill || item.intNetFill),
+          processCategory: item.processCategory || item.txtProcessCategory || null,
+          focusCategory: item.focusCategory || item.txtFocusCategory || null,
+          productCategory: item.productCategory || item.txtProductCategory || null,
+          stdSpeedFbMin: parseSafeFloat(item.stdSpeedFbMin || item.floatStdSpeedFB_Minutes),
+          stdSpeedFilling: parseSafeFloat(item.stdSpeedFilling || item.floatStdSpeedFilling),
+          stdSpeedCbMin: parseSafeFloat(item.stdSpeedCbMin || item.floatStdSpeedCB_Minutes),
+          stdSpeedBinShift: parseSafeFloat(item.stdSpeedBinShift || item.floatStdSpeedBin_Shift),
+          stdBatchCb: parseSafeFloat(item.stdBatchCb || item.floatStdBatch_CB),
+          stdBatchMin: parseSafeFloat(item.stdBatchMin || item.floatStdBatch_minutes),
+        };
+
+        await db.product.create({
+          data: productPayload
+        });
+        createdCount++;
+      } catch (rowErr) {
+        console.error(`Error on bulk row ${i + 1}:`, rowErr);
+        errorCount++;
+        errors.push(`Baris ${i + 1}: ${rowErr.message}`);
+      }
+    }
+
+    return res.json({
+      message: `Bulk import produk selesai. ${createdCount} baru dibuat, ${updatedCount} diperbarui.`,
+      summary: {
+        created: createdCount,
+        updated: updatedCount,
+        failed: errorCount,
+      },
+      errors: errors.length > 0 ? errors.slice(0, 10) : [],
+    });
+  } catch (error) {
+    console.error("Bulk Import Products Error:", error);
+    return res.status(500).json({ error: "Gagal memproses bulk import produk." });
   }
 }
 
@@ -518,6 +843,14 @@ async function saveMqttConfig(req, res) {
         statusStopValue: statusStopValue ? statusStopValue.trim() : "STOP",
       },
     });
+
+    // Terminate existing connection for this machine so initMqttListeners reconnects with fresh settings
+    if (activeClients[machineIdInt]) {
+      try {
+        activeClients[machineIdInt].end(true);
+      } catch (e) {}
+      delete activeClients[machineIdInt];
+    }
 
     // Hot-reload background listeners asynchronously
     initMqttListeners().catch((err) => {
@@ -967,6 +1300,7 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
+  bulkCreateProducts,
   getActivityCodes,
   createActivityCode,
   updateActivityCode,

@@ -6,11 +6,16 @@ const {
   createOkpLog,
   getOkpLogDetail,
   adjustActivityLog,
+  splitActivityLog,
   updateOkpLog,
+  toggleLockOkpLog,
   initiateOkpLog,
+  finishOkpLog,
   getActiveStoppage,
   createManualActivityLog,
+  resumeProduction,
   getMachineStates,
+  changeLotOkpLog,
 } = require("../controllers/transactionController");
 const { parseAndImportOkpLogs, importPackagingLogs } = require("../controllers/importController");
 
@@ -27,12 +32,17 @@ router.post("/okp", authMiddleware, createOkpLog);
 router.post("/okp/import", optionalAuth, parseAndImportOkpLogs);
 router.post("/okp/import-packaging", optionalAuth, importPackagingLogs);
 router.post("/okp/initiate", optionalAuth, initiateOkpLog);
+router.post("/okp/change-lot", optionalAuth, changeLotOkpLog);
+router.post("/okp/:id/finish", optionalAuth, finishOkpLog);
 router.get("/okp/:id", optionalAuth, getOkpLogDetail);
 router.put("/okp/:id", authMiddleware, updateOkpLog);
+router.put("/okp/:id/lock", authMiddleware, toggleLockOkpLog);
 
 // Activity Logs Adjustment
-router.put("/activity-logs/:id", authMiddleware, adjustActivityLog);
+router.put("/activity-logs/:id", optionalAuth, adjustActivityLog);
+router.put("/activity-logs/:id/split", optionalAuth, splitActivityLog);
 router.post("/activity-logs/manual", authMiddleware, createManualActivityLog);
+router.post("/activity-logs/resume", optionalAuth, resumeProduction);
 
 module.exports = router;
 

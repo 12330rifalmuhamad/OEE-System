@@ -11,6 +11,7 @@ const analyticsRoutes = require("./routes/analyticsRoutes");
 const seedRoutes = require("./routes/seedRoutes");
 const { initMqttListeners } = require("./lib/mqttListener");
 const { startOeeRealTimeTicker } = require("./lib/oeeHelper");
+const { startTelemetryWatchdog } = require("./lib/telemetryWatchdog");
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -40,16 +41,6 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
-// Custom HTTP request and response logger
-app.use((req, res, next) => {
-  console.log(`[HTTP] ${req.method} ${req.url}`);
-  const originalJson = res.json;
-  res.json = function (data) {
-    console.log(`[HTTP Response] ${res.statusCode} for ${req.method} ${req.url}:`, JSON.stringify(data));
-    return originalJson.apply(this, arguments);
-  };
-  next();
-});
 
 // Root endpoint for simple health-check
 app.get("/", (req, res) => {
@@ -98,4 +89,7 @@ app.listen(PORT, () => {
   startOeeRealTimeTicker().catch((err) => {
     console.error("[TICKER-BOOT] Failed to start OEE real-time ticker on startup:", err);
   });
+
+  // Start real-time Telemetry Watchdog Timer
+  startTelemetryWatchdog();
 });

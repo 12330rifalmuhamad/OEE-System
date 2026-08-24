@@ -2,8 +2,9 @@ const { db } = require("../lib/db");
 
 async function getOeeAnalytics(req, res) {
   try {
-    const startDateParam = req.query.startDate || req.query.date;
-    const endDateParam = req.query.endDate || req.query.date;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const startDateParam = req.query.startDate || req.query.date || (req.query.okp ? null : todayStr);
+    const endDateParam = req.query.endDate || req.query.date || (req.query.okp ? null : todayStr);
     const okpParam = req.query.okp;
     const machineIdParam = req.query.machineId;
     const lineIdParam = req.query.lineId || req.query.lineProcessId || req.query.line;
@@ -56,9 +57,21 @@ async function getOeeAnalytics(req, res) {
     // 1. Fetch OKP logs WITHOUT activities (extremely lightweight and fast!)
     const okpLogs = await db.okpLog.findMany({
       where: whereClause,
+      orderBy: [
+        { date: "desc" },
+        { id: "desc" }
+      ],
       include: {
-        product: true,
-        machine: true,
+        product: {
+          include: {
+            machineSpeeds: true
+          }
+        },
+        machine: {
+          include: {
+            lineProcess: true
+          }
+        },
       },
     });
 
@@ -179,7 +192,14 @@ async function getOeeAnalytics(req, res) {
       const actualOutput = log.totalOutput;
       const rework = log.rework;
       const reject = log.reject;
-      const stdSpeed = log.product.standarSpeed || 1;
+
+      let stdSpeed = log.product.stdSpeedFilling || log.product.stdSpeedFbMin || 120;
+      if (log.product.machineSpeeds) {
+        const customSpeed = log.product.machineSpeeds.find(ms => ms.machineId === log.machineId);
+        if (customSpeed && customSpeed.speed > 0) {
+          stdSpeed = customSpeed.speed;
+        }
+      }
 
       let logDowntime = log.downtime || 0;
       let logMI = log.mi || 0;
@@ -350,16 +370,30 @@ async function getOeeAnalytics(req, res) {
         }
       });
 
-      // Check machine state
-      const activeActivity = latestActivities.find(act => act.endTime === null);
+      // Check machine state for overall OKP / Line
+      const { machineStates } = require("../lib/mqttListener");
+      
+      // Look for active PR (running) log or active full line stoppage log
+      const activePrLog = latestActivities.find(act => act.endTime === null && act.activityCode?.category?.code === "PR");
+      const activeFullLineStop = latestActivities.find(act => 
+        act.endTime === null && 
+        act.activityCode?.category?.code !== "PR" && 
+        (!act.brRootCause || !act.brRootCause.includes("Partial Downtime"))
+      );
+
       let status = "STOPPED";
-      if (activeActivity) {
-        status = activeActivity.activityCode.category.code === "PR" ? "RUNNING" : "STOPPED";
+      if (activePrLog || !activeFullLineStop) {
+        status = "RUNNING";
+      } else if (activeFullLineStop) {
+        status = "STOPPED";
+      } else if (machineStates[latestOkp.machineId] === "RUN") {
+        status = "RUNNING";
       }
 
       // Calculate operating time for running time display
       let logDowntime = 0;
       let logMI = 0;
+      let logSH = 0;
       latestActivities.forEach((act) => {
         const categoryCode = act.activityCode.category.code;
         let actDuration = act.duration;
@@ -372,12 +406,15 @@ async function getOeeAnalytics(req, res) {
         }
         if (categoryCode === "MI") {
           logMI += actDuration;
+        } else if (categoryCode === "SH") {
+          logSH += actDuration;
         } else if (categoryCode !== "PR") {
           logDowntime += actDuration;
         }
       });
       
-      const logOperatingTime = Math.max(0, latestOkp.loadingTime - logDowntime - logMI);
+      const effectiveLoadingTime = Math.max(0, latestOkp.loadingTime - logSH);
+      const logOperatingTime = Math.max(0, effectiveLoadingTime - logDowntime - logMI);
       const totalSeconds = Math.floor(logOperatingTime * 60);
       const hrs = Math.floor(totalSeconds / 3600);
       const mins = Math.floor((totalSeconds % 3600) / 60);
@@ -388,15 +425,96 @@ async function getOeeAnalytics(req, res) {
         String(secs).padStart(2, "0")
       ].join(":");
 
+      let latestOkpSpeed = latestOkp.product.stdSpeedFilling || latestOkp.product.stdSpeedFbMin || 120;
+      if (latestOkp.product.machineSpeeds) {
+        const customSpeed = latestOkp.product.machineSpeeds.find(ms => ms.machineId === latestOkp.machineId);
+        if (customSpeed && customSpeed.speed > 0) {
+          latestOkpSpeed = customSpeed.speed;
+        }
+      }
+
       latestOkpDetails = {
         id: latestOkp.id,
         okpNumber: latestOkp.okpNumber,
+        lotNumber: latestOkp.lotNumber || "-",
+        productId: latestOkp.productId,
+        productCode: latestOkp.product.productCode || "-",
         productName: latestOkp.product.name,
+        date: latestOkp.date ? latestOkp.date.toISOString().split('T')[0] : "-",
+        shift: latestOkp.shift || 1,
         operator: latestOkp.operator || "SYSTEM",
         status,
         runningTime: runningTimeStr,
-        standardSpeed: latestOkp.product.standarSpeed,
+        standardSpeed: latestOkpSpeed,
       };
+    }
+
+    // Integrate with PostgreSQL View Tables (v_oee_line_daily_summary, v_oee_pareto_downtime, v_oee_hourly_timeline)
+    if (lineIdParam && startDateParam) {
+      try {
+        const lineIdInt = parseInt(lineIdParam, 10);
+        
+        // 1. View Summary Daily
+        const viewRows = await db.$queryRaw`
+          SELECT * FROM v_oee_line_daily_summary 
+          WHERE line_process_id = ${lineIdInt} 
+            AND transaction_date = ${startDateParam}::date
+        `;
+        if (viewRows && viewRows.length > 0) {
+          const row = viewRows[0];
+          if (row.oee !== null && row.oee !== undefined) {
+            oee = Number(row.oee);
+            availabilityRate = Number(row.availability_rate);
+            performanceRate = Number(row.performance_rate);
+            qualityRate = Number(row.quality_rate);
+            if (row.total_output !== null && row.total_output !== undefined) {
+              totalActualOutput = Number(row.total_output);
+            }
+          }
+        }
+
+        // 2. View Pareto Downtime
+        const paretoViewRows = await db.$queryRaw`
+          SELECT category_code, category_name, SUM(frequency_count) as count, SUM(total_duration_minutes) as minutes 
+          FROM v_oee_pareto_downtime 
+          WHERE line_process_id = ${lineIdInt} 
+            AND transaction_date = ${startDateParam}::date
+          GROUP BY category_code, category_name
+        `;
+        if (paretoViewRows && paretoViewRows.length > 0) {
+          const viewParetoData = paretoViewRows.map(p => ({
+            code: p.category_code,
+            name: p.category_name,
+            minutes: Number(p.minutes || 0),
+            count: Number(p.count || 0)
+          }));
+          paretoData.length = 0;
+          paretoData.push(...viewParetoData);
+        }
+
+        // 3. View Hourly Timeline
+        const timelineViewRows = await db.$queryRaw`
+          SELECT hour_of_day, SUM(running_minutes) as running, SUM(downtime_minutes) as downtime, SUM(minor_stoppage_minutes) as mi
+          FROM v_oee_hourly_timeline
+          WHERE line_process_id = ${lineIdInt} 
+            AND transaction_date = ${startDateParam}::date
+          GROUP BY hour_of_day
+          ORDER BY hour_of_day ASC
+        `;
+        if (timelineViewRows && timelineViewRows.length > 0) {
+          const viewTimelineData = timelineViewRows.map(t => ({
+            hour: Number(t.hour_of_day),
+            running: Number(t.running || 0),
+            downtime: Number(t.downtime || 0),
+            mi: Number(t.mi || 0)
+          }));
+          timelineData.length = 0;
+          timelineData.push(...viewTimelineData);
+        }
+
+      } catch (viewErr) {
+        console.warn("[Postgres View Integration] Fallback to standard query:", viewErr.message);
+      }
     }
 
     return res.json({
@@ -420,20 +538,55 @@ async function getOeeAnalytics(req, res) {
       machineOee: machineOeeData,
       timeline: timelineData,
       latestOkp: latestOkpDetails,
-      okpLogs: okpLogs.map(log => ({
-        id: log.id,
-        okpNumber: log.okpNumber,
-        date: log.date.toISOString().split("T")[0],
-        shift: log.shift,
-        machineName: log.machine.name,
-        productName: log.product.name,
-        totalOutput: log.totalOutput,
-        availability: log.availability,
-        performance: log.performance,
-        quality: log.quality,
-        oee: log.oee,
-        downtime: log.downtime,
-      })),
+      okpLogs: okpLogs.map(log => {
+        const now = new Date();
+        const logActs = paretoActivities.filter(act => act.okpLogId === log.id);
+        let prMin = 0;
+        let dtMin = 0;
+
+        if (logActs.length > 0) {
+          logActs.forEach(a => {
+            const cat = a.activityCode?.category?.code;
+            let dur = a.duration || 0;
+            if (a.endTime === null) {
+              const start = a.startTime || a.createdAt || now;
+              dur = Math.max(0, (now - new Date(start)) / 60000);
+            }
+            if (cat === 'PR') {
+              prMin += dur;
+            } else if (cat !== 'MI') {
+              dtMin += dur;
+            }
+          });
+        } else {
+          dtMin = log.downtime || 0;
+          prMin = log.availability 
+            ? (log.availability / 100) * (log.loadingTime || 480) 
+            : Math.max(0, (log.loadingTime || 480) - dtMin);
+        }
+
+        const operatingTime = parseFloat(prMin.toFixed(1));
+        const downtime = parseFloat(dtMin.toFixed(1));
+
+        return {
+          id: log.id,
+          okpNumber: log.okpNumber,
+          date: log.date.toISOString().split("T")[0],
+          shift: log.shift,
+          machineName: (log.machine && log.machine.lineProcess) ? log.machine.lineProcess.name : (log.machine ? log.machine.name : "-"),
+          lineName: (log.machine && log.machine.lineProcess) ? log.machine.lineProcess.name : (log.machine ? log.machine.name : "-"),
+          productName: log.product.name,
+          totalOutput: log.totalOutput,
+          loadingTime: log.loadingTime || 480,
+          operatingTime: operatingTime,
+          downtime: downtime,
+          availability: log.availability,
+          performance: log.performance,
+          quality: log.quality,
+          oee: log.oee,
+          isLocked: log.isLocked,
+        };
+      }),
     });
   } catch (error) {
     console.error("GET OEE Analytics Error:", error);

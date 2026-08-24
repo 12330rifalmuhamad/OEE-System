@@ -100,6 +100,7 @@ model Machine {
   mqttConfig     MqttConfig?
   lineProcessId  Int?         @map("intLineProcess_ID")
   lineProcess    LineProcess? @relation(fields: [lineProcessId], references: [id], onDelete: SetNull)
+  productSpeeds  ProductMachineSpeed[]
 
   createdAt  DateTime @default(now()) @map("dtmCreatedAt")
   updatedAt  DateTime @updatedAt @map("dtmUpdatedAt")
@@ -110,19 +111,41 @@ model Machine {
 }
 
 model Product {
-  id           Int      @id @default(autoincrement()) @map("intProduct_ID")
-  companyId    Int      @map("intCompany_ID")
-  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  productCode  String?  @map("txtProductCode") // Kode Produk dari ERP/Oracle
-  name         String   @map("txtProductName") // Nama Produk
-  size         String?  @map("txtProductSize") // Ukuran (Misal: 800gr)
-  standarSpeed Float    @map("fltStandardSpeed") // pcs/menit
-  okpLogs      OkpLog[]
+  id                    Int      @id @default(autoincrement()) @map("intProduct_ID")
+  companyId             Int      @map("intCompany_ID")
+  company               Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  lineProcessId         Int?     @map("intLineProcess_ID")
+  lineProcess           LineProcess? @relation(fields: [lineProcessId], references: [id], onDelete: SetNull)
 
-  createdAt  DateTime @default(now()) @map("dtmCreatedAt")
-  updatedAt  DateTime @updatedAt @map("dtmUpdatedAt")
-  createdBy  String?  @default("SYSTEM") @map("txtCreatedBy")
-  updatedBy  String?  @default("SYSTEM") @map("txtUpdatedBy")
+  articleCode           String?  @map("txtArtCode")
+  name                  String   @map("txtProductName")
+  productCode           String?  @map("txtProductCode")
+  lineCode              String?  @map("txtLineCode")
+  
+  batchSizeKg           Float?   @map("floatBatchSizeBin")
+  stdSpeedFbMin         Float?   @map("floatStdSpeedFB_Minutes")
+  pcsPerCarton          Int?     @map("intQtyPcsCarton")
+  netFill               Int?     @map("intNetFill")
+
+  processCategory       String?  @map("txtProcessCategory")
+  productCategory       String?  @map("txtProductCategory")
+  focusCategory         String?  @map("txtFocusCategory")
+
+  createdBy             String?  @default("SYSTEM") @map("txtInsertedBy")
+  createdAt             DateTime @default(now()) @map("dtmInserted")
+  updatedBy             String?  @default("SYSTEM") @map("txtUpdatedBy")
+  updatedAt             DateTime @updatedAt @map("dtmUpdated")
+  isActive              Boolean  @default(true) @map("bitActive")
+
+  stdSpeedFilling       Float?   @map("floatStdSpeedFilling")
+  stdSpeedCbMin         Float?   @map("floatStdSpeedCB_Minutes")
+  stdSpeedBinShift      Float?   @map("floatStdSpeedBin_Shift")
+  stdBatchCb            Float?   @map("floatStdBatch_CB")
+  stdBatchMin           Float?   @map("floatStdBatch_minutes")
+
+  okpLogs               OkpLog[]
+  machineSpeeds         ProductMachineSpeed[]
 
   @@map("mProduct")
 }
@@ -134,8 +157,10 @@ model OkpLog {
   company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   okpNumber    String   @map("txtOkpNumber") // Catatan: Kombinasi unique dengan companyId disarankan di level database
+  lotNumber    String?  @map("txtLotNumber")
   date         DateTime @map("dtmDate")
   shift        Int      @map("intShift")
+  isLocked     Boolean  @default(false) @map("bitIsLocked")
   
   machineId    Int      @map("intMachine_ID")
   machine      Machine  @relation(fields: [machineId], references: [id], onDelete: Restrict)
@@ -336,6 +361,7 @@ model LineProcess {
   company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   name       String    @map("txtLineProcessName")
   machines   Machine[]
+  products   Product[]
   createdAt  DateTime  @default(now()) @map("dtmCreatedAt")
   updatedAt  DateTime  @updatedAt @map("dtmUpdatedAt")
   createdBy  String?   @default("SYSTEM") @map("txtCreatedBy")
@@ -397,5 +423,20 @@ model OeeAccessMenu {
   menu    OeeMenu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
 
   @@map("maccessmenuoees")
+}
+
+model ProductMachineSpeed {
+  id        Int      @id @default(autoincrement()) @map("intProductMachineSpeed_ID")
+  productId Int      @map("intProduct_ID")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  machineId Int      @map("intMachine_ID")
+  machine   Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  speed     Float    @map("fltSpeed")
+
+  createdAt DateTime @default(now()) @map("dtmCreatedAt")
+  updatedAt DateTime @updatedAt @map("dtmUpdatedAt")
+
+  @@unique([productId, machineId])
+  @@map("mProductMachineSpeed")
 }
 

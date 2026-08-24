@@ -36,8 +36,7 @@ async function parseAndImportOkpLogs(req, res) {
           companyId,
           productCode: "DAILY-PROD",
           name: "Daily Production Log",
-          size: "1Kg",
-          standarSpeed: 100.0,
+          stdSpeedFilling: 100.0,
           createdBy: emailUser,
           updatedBy: emailUser
         }
@@ -264,8 +263,7 @@ async function importPackagingLogs(req, res) {
                 companyId,
                 productCode: row.productCode || "DAILY-PROD",
                 name: row.productName || "Daily Production Log",
-                size: "1Kg",
-                standarSpeed: 100.0,
+                stdSpeedFilling: 100.0,
                 createdBy: emailUser,
                 updatedBy: emailUser
               }

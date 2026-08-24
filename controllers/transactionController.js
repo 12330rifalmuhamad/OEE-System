@@ -219,6 +219,10 @@ async function getOkpLogDetail(req, res) {
         },
         product: true,
         activities: {
+          orderBy: [
+            { startTime: "desc" },
+            { id: "desc" }
+          ],
           include: {
             activityCode: {
               include: {
@@ -275,6 +279,10 @@ async function adjustActivityLog(req, res) {
       return res.status(404).json({ error: "Catatan aktivitas tidak ditemukan." });
     }
 
+    if (activityLog.okpLog.isLocked) {
+      return res.status(403).json({ error: "Log book ini sudah terkunci (Locked). Aktivitas tidak dapat disesuaikan." });
+    }
+
     // Lakukan adjustment di database
     const updated = await db.activityLog.update({
       where: { id: activityLogId },
@@ -316,6 +324,7 @@ async function updateOkpLog(req, res) {
 
     const {
       okpNumber,
+      isLocked,
       date,
       shift,
       machineId,
@@ -367,7 +376,19 @@ async function updateOkpLog(req, res) {
       return res.status(400).json({ error: "Kolom OKP, Tanggal, Shift, Mesin, Produk, Loading Time, dan Total Output wajib diisi." });
     }
 
-    // 2. Cek duplikasi OKP Number untuk ID transaksi yang berbeda pada company yang sama
+    // 2. Cek eksistensi dan lock status
+    const existingLog = await db.okpLog.findUnique({
+      where: { id: idInt }
+    });
+    if (!existingLog || existingLog.companyId !== req.user.companyId) {
+      return res.status(404).json({ error: "Transaksi OKP tidak ditemukan." });
+    }
+
+    if (existingLog.isLocked && isLocked !== false) {
+      return res.status(403).json({ error: "Log book ini sudah terkunci (Locked) dan tidak dapat diubah." });
+    }
+
+    // Cek duplikasi OKP Number untuk ID transaksi yang berbeda pada company yang sama
     const duplicate = await db.okpLog.findFirst({
       where: {
         companyId: req.user.companyId,
@@ -397,6 +418,7 @@ async function updateOkpLog(req, res) {
       where: { id: idInt },
       data: {
         okpNumber,
+        isLocked: isLocked !== undefined ? Boolean(isLocked) : undefined,
         date: new Date(date),
         shift: parseInt(shift),
         machineId: parseInt(machineId, 10),
@@ -460,6 +482,7 @@ async function initiateOkpLog(req, res) {
   try {
     const {
       okpNumber,
+      lotNumber,
       machineId,
       machineCode,
       machineName,
@@ -520,19 +543,30 @@ async function initiateOkpLog(req, res) {
     });
 
     if (!product) {
-      // Fallback to the first available product in the database so the request doesn't fail
-      product = await db.product.findFirst({
-        where: { companyId: machine.companyId }
-      });
-      if (!product) {
-        return res.status(404).json({ error: "Produk tidak ditemukan di database." });
+      if (productCode && productName) {
+        product = await db.product.create({
+          data: {
+            companyId: machine.companyId,
+            productCode: productCode,
+            name: productName,
+            standarSpeed: 120.0, // default standard speed
+          }
+        });
+      } else {
+        // Fallback to the first available product in the database so the request doesn't fail
+        product = await db.product.findFirst({
+          where: { companyId: machine.companyId }
+        });
+        if (!product) {
+          return res.status(404).json({ error: "Produk tidak ditemukan di database." });
+        }
       }
     }
 
     const emailUser = req.user?.email || "API_INITIATE";
 
-    // 4. Close any previous active OKP on this production line
-    // An active OKP is defined as one with an open activity log (endTime: null)
+    // 4. Handle previous active OKPs on this line
+    // Close any open activity log on previous OKPs on this line when initiating a new OKP
     const now = new Date();
     const activeOkpLogs = await db.okpLog.findMany({
       where: {
@@ -554,10 +588,8 @@ async function initiateOkpLog(req, res) {
       for (const openAct of prevOkp.activities) {
         const start = openAct.startTime || openAct.createdAt || now;
         let durationMin = parseFloat(((now - start) / 60000).toFixed(2));
-        if (isNaN(durationMin) || durationMin <= 0) {
-          durationMin = 0.01;
-        }
-        
+        if (isNaN(durationMin) || durationMin <= 0) durationMin = 0.01;
+
         await db.activityLog.update({
           where: { id: openAct.id },
           data: {
@@ -567,8 +599,19 @@ async function initiateOkpLog(req, res) {
           }
         });
       }
-      
-      // Recalculate OEE metrics for the closed OKP log
+
+      // Refine loadingTime of previous OKP if it was left at default 480
+      const allPrevActs = await db.activityLog.findMany({
+        where: { okpLogId: prevOkp.id, endTime: { not: null } }
+      });
+      const actualPrevDur = allPrevActs.reduce((sum, a) => sum + (a.duration || 0), 0);
+      if (actualPrevDur > 0 && prevOkp.loadingTime === 480) {
+        await db.okpLog.update({
+          where: { id: prevOkp.id },
+          data: { loadingTime: parseFloat(actualPrevDur.toFixed(1)), updatedBy: emailUser }
+        });
+      }
+
       await recalculateOkpLogOee(prevOkp.id, db);
     }
 
@@ -582,22 +625,15 @@ async function initiateOkpLog(req, res) {
     });
 
     if (existing) {
-      // If it exists, append a timestamp to make it unique and allow re-initiation for testing
       targetOkpNumber = `${okpNumber}-${Date.now().toString().slice(-4)}`;
     }
 
-    // 6. Create active running OKP log and activity log for the target machine representing the line
-    const runCode = await db.activityCode.findFirst({
-      where: {
-        companyId: machine.companyId,
-        category: { code: "PR" }
-      }
-    });
-
+    // 6. Create new OKP in INITIATED status
     const newOkp = await db.okpLog.create({
       data: {
         companyId: machine.companyId,
         okpNumber: targetOkpNumber,
+        lotNumber: lotNumber || null,
         date: new Date(),
         shift: parseInt(shift, 10) || 1,
         machineId: machine.id,
@@ -614,12 +650,29 @@ async function initiateOkpLog(req, res) {
       }
     });
 
+    // Automatically start PR (Normal Production Run) activity log for the new OKP
+    let runCode = await db.activityCode.findFirst({
+      where: {
+        companyId: machine.companyId,
+        code: { equals: "PR.1", mode: "insensitive" }
+      }
+    });
+
+    if (!runCode) {
+      runCode = await db.activityCode.findFirst({
+        where: {
+          companyId: machine.companyId,
+          category: { code: "PR" }
+        }
+      });
+    }
+
     if (runCode) {
       await db.activityLog.create({
         data: {
           okpLogId: newOkp.id,
           activityCodeId: runCode.id,
-          startTime: new Date(),
+          startTime: now,
           endTime: null,
           duration: 0.0,
           createdBy: emailUser,
@@ -628,18 +681,38 @@ async function initiateOkpLog(req, res) {
       });
     }
 
+    // Update machine state cache to RUN for this machine
+    const { machineStates } = require("../lib/mqttListener");
+    machineStates[machine.id] = "RUN";
+
     // Recalculate OEE for the new OKP Log
     await recalculateOkpLogOee(newOkp.id, db);
 
-    // 7. Broadcast SSE event to trigger real-time UI refresh in Next.js dashboard
+    // 7. Broadcast SSE event (Machine transitioning to RUN for new OKP)
     const { broadcastEvent } = require("../lib/realtime");
     broadcastEvent("machine_state_change", {
       machineId: machine.id,
       machineName: machine.name,
       okpNumber: newOkp.okpNumber,
       state: "RUN",
-      timestamp: new Date().toISOString()
+      category: "PR",
+      activityCode: runCode ? runCode.code : "PR.1",
+      description: runCode ? runCode.fullDescription : "Normal Production Run",
+      timestamp: now.toISOString()
+    }, machine.lineProcessId);
+
+    let stdSpeed = product.stdSpeedFilling || product.stdSpeedFbMin || 120;
+    const customSpeed = await db.productMachineSpeed.findUnique({
+      where: {
+        productId_machineId: {
+          productId: product.id,
+          machineId: machine.id
+        }
+      }
     });
+    if (customSpeed && customSpeed.speed > 0) {
+      stdSpeed = customSpeed.speed;
+    }
 
     return res.status(201).json({
       message: "Lini produksi berhasil diinisiasi.",
@@ -647,7 +720,7 @@ async function initiateOkpLog(req, res) {
       okpNumber: newOkp.okpNumber,
       machine: machine.name,
       product: product.name,
-      standarSpeed: product.standarSpeed
+      standarSpeed: stdSpeed
     });
 
   } catch (error) {
@@ -749,10 +822,43 @@ async function createManualActivityLog(req, res) {
       return res.status(404).json({ error: "Transaksi OKP tidak ditemukan." });
     }
 
-    // 2. Calculate duration if not provided
+    if (okpLog.isLocked) {
+      return res.status(403).json({ error: "Log book ini sudah terkunci (Locked). Tidak dapat menambahkan gangguan manual." });
+    }
+
+    // 2. Close ALL open activity logs for this OKP before starting a new manual activity log
+    const manualStart = new Date(startTime);
+    const openLogs = await db.activityLog.findMany({
+      where: {
+        okpLogId: parseInt(okpLogId, 10),
+        endTime: null
+      }
+    });
+
+    if (openLogs.length > 0) {
+      for (const openLog of openLogs) {
+        const openStart = new Date(openLog.startTime || openLog.createdAt || manualStart);
+        let dur = 0.01;
+        if (manualStart > openStart) {
+          const diffMs = manualStart - openStart;
+          dur = parseFloat((diffMs / 60000).toFixed(2));
+          if (isNaN(dur) || dur < 0) dur = 0.01;
+        }
+        await db.activityLog.update({
+          where: { id: openLog.id },
+          data: {
+            endTime: manualStart,
+            duration: dur,
+            updatedBy: emailUser
+          }
+        });
+      }
+    }
+
+    // 3. Calculate duration if provided, otherwise default to 0 for ongoing
     let calculatedDuration = parseFloat(duration);
     if (isNaN(calculatedDuration) && endTime) {
-      const diffMs = new Date(endTime) - new Date(startTime);
+      const diffMs = new Date(endTime) - manualStart;
       calculatedDuration = parseFloat((diffMs / 60000).toFixed(2));
     }
 
@@ -760,18 +866,18 @@ async function createManualActivityLog(req, res) {
       calculatedDuration = 0;
     }
 
-    // 3. Create the manual activity log
+    // 4. Create the manual activity log
     const newActivity = await db.activityLog.create({
       data: {
         okpLogId: parseInt(okpLogId, 10),
         activityCodeId: parseInt(activityCodeId, 10),
-        startTime: new Date(startTime),
+        startTime: manualStart,
         endTime: endTime ? new Date(endTime) : null,
         duration: calculatedDuration,
         brRootCause: brRootCause || null,
-        brMtdtWaiting: brMtdtWaiting !== undefined ? parseFloat(brMtdtWaiting) : null,
-        brMtdtRepair: brMtdtRepair !== undefined ? parseFloat(brMtdtRepair) : null,
-        brMtdtStartup: brMtdtStartup !== undefined ? parseFloat(brMtdtStartup) : null,
+        brMtdtWaiting: brMtdtWaiting !== undefined && brMtdtWaiting !== null ? parseFloat(brMtdtWaiting) : null,
+        brMtdtRepair: brMtdtRepair !== undefined && brMtdtRepair !== null ? parseFloat(brMtdtRepair) : null,
+        brMtdtStartup: brMtdtStartup !== undefined && brMtdtStartup !== null ? parseFloat(brMtdtStartup) : null,
         createdBy: emailUser,
         updatedBy: emailUser
       },
@@ -782,11 +888,11 @@ async function createManualActivityLog(req, res) {
       }
     });
 
-    // 4. Recalculate OEE metrics
+    // 5. Recalculate OEE metrics
     await recalculateOkpLogOee(okpLog.id, db);
 
     return res.status(201).json({
-      message: "Gangguan manual berhasil disimpan.",
+      message: (openLogs && openLogs.length > 0) ? "Gangguan lama otomatis diselesaikan dan gangguan baru dimulai." : "Gangguan manual berhasil disimpan.",
       activityLog: newActivity
     });
   } catch (error) {
@@ -795,12 +901,362 @@ async function createManualActivityLog(req, res) {
   }
 }
 
+async function resumeProduction(req, res) {
+  try {
+    const { okpLogId } = req.body;
+
+    if (!okpLogId) {
+      return res.status(400).json({ error: "ID OKP Log wajib diisi." });
+    }
+
+    const emailUser = req.user?.email || "SYSTEM";
+    const okpLog = await db.okpLog.findUnique({
+      where: { id: parseInt(okpLogId, 10) },
+      include: { machine: true }
+    });
+
+    if (!okpLog) {
+      return res.status(404).json({ error: "Transaksi OKP tidak ditemukan." });
+    }
+
+    if (okpLog.isLocked) {
+      return res.status(403).json({ error: "Log book ini sudah terkunci (Locked)." });
+    }
+
+    const now = new Date();
+
+    // Find all currently open activity logs
+    const openLogs = await db.activityLog.findMany({
+      where: {
+        okpLogId: okpLog.id,
+        endTime: null
+      },
+      include: {
+        activityCode: { include: { category: true } }
+      }
+    });
+
+    // If only 1 open log exists and it's already PR, line is already running
+    if (openLogs.length === 1 && openLogs[0].activityCode && openLogs[0].activityCode.category && openLogs[0].activityCode.category.code === 'PR') {
+      return res.status(200).json({
+        message: "Lini/Mesin sudah dalam keadaan RUNNING.",
+        activityLog: openLogs[0]
+      });
+    }
+
+    // Close ALL existing open logs
+    for (const openLog of openLogs) {
+      const openStart = new Date(openLog.startTime || openLog.createdAt);
+      let dur = parseFloat(((now - openStart) / 60000).toFixed(2));
+      if (isNaN(dur) || dur <= 0) dur = 0.01;
+      await db.activityLog.update({
+        where: { id: openLog.id },
+        data: {
+          endTime: now,
+          duration: dur,
+          updatedBy: emailUser
+        }
+      });
+    }
+
+    // Resolve PR.1 or default Productive activity code
+    let prCode = await db.activityCode.findFirst({
+      where: { code: "PR.1" }
+    });
+
+    if (!prCode) {
+      prCode = await db.activityCode.findFirst({
+        where: { category: { code: "PR" } }
+      });
+    }
+
+    if (!prCode) {
+      return res.status(400).json({ error: "Kode Aktivitas Produksi (PR) tidak ditemukan." });
+    }
+
+    // Create new PR running log
+    const newPrLog = await db.activityLog.create({
+      data: {
+        okpLogId: okpLog.id,
+        activityCodeId: prCode.id,
+        startTime: now,
+        endTime: null,
+        duration: 0,
+        createdBy: emailUser,
+        updatedBy: emailUser
+      },
+      include: {
+        activityCode: { include: { category: true } }
+      }
+    });
+
+    await recalculateOkpLogOee(okpLog.id, db);
+
+    return res.status(200).json({
+      message: "Mesin berhasil kembali RUNNING. Gangguan telah diselesaikan.",
+      activityLog: newPrLog
+    });
+  } catch (error) {
+    console.error("Resume Production Error:", error);
+    return res.status(500).json({ error: "Gagal mengembalikan mesin ke status RUNNING." });
+  }
+}
+
+async function toggleLockOkpLog(req, res) {
+  try {
+    const idInt = parseInt(req.params.id, 10);
+    if (isNaN(idInt)) {
+      return res.status(400).json({ error: "ID OKP tidak valid." });
+    }
+
+    const { isLocked } = req.body;
+    if (isLocked === undefined) {
+      return res.status(400).json({ error: "Kolom status kunci (isLocked) wajib diisi." });
+    }
+
+    const existingLog = await db.okpLog.findUnique({
+      where: { id: idInt }
+    });
+
+    if (!existingLog || existingLog.companyId !== req.user.companyId) {
+      return res.status(404).json({ error: "Transaksi OKP tidak ditemukan." });
+    }
+
+    const updated = await db.okpLog.update({
+      where: { id: idInt },
+      data: {
+        isLocked: Boolean(isLocked)
+      }
+    });
+
+    return res.json({
+      message: isLocked ? "Log book berhasil dikunci." : "Kunci log book berhasil dibuka.",
+      okpLog: updated
+    });
+  } catch (error) {
+    console.error("PUT OKP Log Lock Error:", error);
+    return res.status(500).json({ error: "Gagal mengubah status kunci log book." });
+  }
+}
+
+async function finishOkpLog(req, res) {
+  try {
+    const idInt = parseInt(req.params.id, 10);
+    if (isNaN(idInt)) {
+      return res.status(400).json({ error: "ID OKP tidak valid." });
+    }
+
+    const emailUser = req.user?.email || "API_FINISH";
+
+    const okpLog = await db.okpLog.findUnique({
+      where: { id: idInt },
+      include: {
+        machine: true,
+        activities: { where: { endTime: null } }
+      }
+    });
+
+    if (!okpLog) {
+      return res.status(404).json({ error: "OKP tidak ditemukan." });
+    }
+
+    const now = new Date();
+
+    // 1. Close any open activity log for this OKP
+    for (const openAct of okpLog.activities) {
+      const start = openAct.startTime || openAct.createdAt || now;
+      let durationMin = parseFloat(((now - start) / 60000).toFixed(2));
+      if (isNaN(durationMin) || durationMin <= 0) durationMin = 0.01;
+
+      await db.activityLog.update({
+        where: { id: openAct.id },
+        data: { endTime: now, duration: durationMin, updatedBy: emailUser }
+      });
+    }
+
+
+
+    // Calculate total actual activity duration for this OKP upon finish
+    const allActs = await db.activityLog.findMany({
+      where: { okpLogId: okpLog.id, endTime: { not: null } }
+    });
+    const actualDur = allActs.reduce((sum, a) => sum + (a.duration || 0), 0);
+    
+    // If loadingTime was default 480 and actual duration is known, refine loadingTime to actual duration
+    if (actualDur > 0 && okpLog.loadingTime === 480) {
+      await db.okpLog.update({
+        where: { id: okpLog.id },
+        data: { loadingTime: parseFloat(actualDur.toFixed(1)), updatedBy: emailUser }
+      });
+    } else {
+      await db.okpLog.update({
+        where: { id: okpLog.id },
+        data: { updatedBy: emailUser }
+      });
+    }
+
+    await recalculateOkpLogOee(okpLog.id, db);
+
+    const { broadcastEvent } = require("../lib/realtime");
+    broadcastEvent("machine_state_change", {
+      machineId: okpLog.machineId,
+      machineName: okpLog.machine ? okpLog.machine.name : "Mesin Utama",
+      okpNumber: okpLog.okpNumber,
+      state: "STOP",
+      category: "SE",
+      timestamp: now.toISOString()
+    });
+
+    return res.status(200).json({
+      message: `OKP '${okpLog.okpNumber}' berhasil di-finish. Persiapan (SE.8) diinisiasi.`,
+      okpLogId: okpLog.id
+    });
+  } catch (error) {
+    console.error("Finish OKP Error:", error);
+    return res.status(500).json({ error: "Gagal memproses Finish OKP." });
+  }
+}
+
 async function getMachineStates(req, res) {
   try {
+    const { machineStates } = require("../lib/mqttListener");
     return res.json({ machineStates });
   } catch (error) {
     console.error("GET Machine States Error:", error);
     return res.status(500).json({ error: "Gagal mengambil status mesin." });
+  }
+}
+
+async function splitActivityLog(req, res) {
+  try {
+    const { id } = req.params;
+    const { splits } = req.body; // Array of { activityCodeId, duration, brRootCause, brMtdtWaiting, brMtdtRepair, brMtdtStartup }
+
+    if (!splits || !Array.isArray(splits) || splits.length < 2) {
+      return res.status(400).json({ error: "Minimal 2 bagian split yang harus diisi." });
+    }
+
+    const activityLogId = parseInt(id, 10);
+    if (isNaN(activityLogId)) {
+      return res.status(400).json({ error: "ID activity log tidak valid." });
+    }
+
+    // 1. Fetch original activity log
+    const originalLog = await db.activityLog.findUnique({
+      where: { id: activityLogId },
+      include: {
+        activityCode: { include: { category: true } },
+        okpLog: true
+      }
+    });
+
+    if (!originalLog) {
+      return res.status(404).json({ error: "Aktivitas tidak ditemukan." });
+    }
+
+    if (originalLog.okpLog && originalLog.okpLog.isLocked) {
+      return res.status(403).json({ error: "Transaksi OKP sudah terkunci." });
+    }
+
+    if (originalLog.endTime === null) {
+      return res.status(400).json({ error: "Hanya aktivitas downtime yang sudah selesai yang dapat di-split." });
+    }
+
+    if (originalLog.activityCode && originalLog.activityCode.category && originalLog.activityCode.category.code === "PR") {
+      return res.status(400).json({ error: "Aktivitas berjalan (Productive/PR) tidak dapat di-split." });
+    }
+
+    // 2. Validate total duration of splits
+    const originalDuration = parseFloat(originalLog.duration) || 0;
+    let totalSplitDuration = 0;
+    
+    for (let i = 0; i < splits.length; i++) {
+      const dur = parseFloat(splits[i].duration);
+      if (isNaN(dur) || dur <= 0) {
+        return res.status(400).json({ error: `Durasi pada bagian ke-${i + 1} harus lebih besar dari 0.` });
+      }
+      totalSplitDuration += dur;
+    }
+
+    // Floating point check: totalSplitDuration cannot exceed originalDuration + 0.01 tolerance
+    if (totalSplitDuration > originalDuration + 0.01) {
+      return res.status(400).json({
+        error: `Total durasi split (${totalSplitDuration.toFixed(2)} menit) melebihi durasi asli (${originalDuration.toFixed(2)} menit).`
+      });
+    }
+
+    const emailUser = req.user ? req.user.email : (originalLog.createdBy || "SYSTEM");
+    const originalStartMs = new Date(originalLog.startTime).getTime();
+    const originalEndMs = new Date(originalLog.endTime).getTime();
+
+    // 3. Process splits sequentially
+    const createdLogs = [];
+    let currentStartMs = originalStartMs;
+
+    for (let i = 0; i < splits.length; i++) {
+      const s = splits[i];
+      const durMin = parseFloat(s.duration);
+      const segDurationMs = Math.round(durMin * 60000);
+      
+      let segEndMs = currentStartMs + segDurationMs;
+      if (i === splits.length - 1 && Math.abs(totalSplitDuration - originalDuration) < 0.05) {
+        segEndMs = originalEndMs;
+      }
+
+      const segStartTime = new Date(currentStartMs);
+      const segEndTime = new Date(segEndMs);
+      const actCodeId = parseInt(s.activityCodeId, 10);
+
+      if (i === 0) {
+        const updated = await db.activityLog.update({
+          where: { id: originalLog.id },
+          data: {
+            activityCodeId: actCodeId,
+            startTime: segStartTime,
+            endTime: segEndTime,
+            duration: parseFloat(durMin.toFixed(2)),
+            brRootCause: s.brRootCause || originalLog.brRootCause || null,
+            brMtdtWaiting: s.brMtdtWaiting !== undefined && s.brMtdtWaiting !== null ? parseFloat(s.brMtdtWaiting) : null,
+            brMtdtRepair: s.brMtdtRepair !== undefined && s.brMtdtRepair !== null ? parseFloat(s.brMtdtRepair) : null,
+            brMtdtStartup: s.brMtdtStartup !== undefined && s.brMtdtStartup !== null ? parseFloat(s.brMtdtStartup) : null,
+            updatedBy: emailUser
+          },
+          include: { activityCode: { include: { category: true } } }
+        });
+        createdLogs.push(updated);
+      } else {
+        const created = await db.activityLog.create({
+          data: {
+            okpLogId: originalLog.okpLogId,
+            activityCodeId: actCodeId,
+            startTime: segStartTime,
+            endTime: segEndTime,
+            duration: parseFloat(durMin.toFixed(2)),
+            brRootCause: s.brRootCause || null,
+            brMtdtWaiting: s.brMtdtWaiting !== undefined && s.brMtdtWaiting !== null ? parseFloat(s.brMtdtWaiting) : null,
+            brMtdtRepair: s.brMtdtRepair !== undefined && s.brMtdtRepair !== null ? parseFloat(s.brMtdtRepair) : null,
+            brMtdtStartup: s.brMtdtStartup !== undefined && s.brMtdtStartup !== null ? parseFloat(s.brMtdtStartup) : null,
+            createdBy: emailUser,
+            updatedBy: emailUser
+          },
+          include: { activityCode: { include: { category: true } } }
+        });
+        createdLogs.push(created);
+      }
+
+      currentStartMs = segEndMs;
+    }
+
+    // 4. Recalculate OEE
+    await recalculateOkpLogOee(originalLog.okpLogId, db);
+
+    return res.status(200).json({
+      message: "Downtime berhasil di-split.",
+      activityLogs: createdLogs
+    });
+  } catch (error) {
+    console.error("Split Activity Log Error:", error);
+    return res.status(500).json({ error: "Gagal memproses split downtime." });
   }
 }
 
@@ -809,9 +1265,199 @@ module.exports = {
   createOkpLog,
   getOkpLogDetail,
   adjustActivityLog,
+  splitActivityLog,
   updateOkpLog,
+  toggleLockOkpLog,
   initiateOkpLog,
+  finishOkpLog,
   getActiveStoppage,
   createManualActivityLog,
+  resumeProduction,
   getMachineStates,
+  changeLotOkpLog,
 };
+
+async function changeLotOkpLog(req, res) {
+  try {
+    const { okpLogId, lotNumber, action, notes } = req.body;
+
+    if (!okpLogId) {
+      return res.status(400).json({ error: "ID OKP Log wajib diisi." });
+    }
+
+    const emailUser = req.user?.email || "SYSTEM";
+    const okpLog = await db.okpLog.findUnique({
+      where: { id: parseInt(okpLogId, 10) },
+      include: { machine: true }
+    });
+
+    if (!okpLog) {
+      return res.status(404).json({ error: "Transaksi OKP tidak ditemukan." });
+    }
+
+    if (okpLog.isLocked) {
+      return res.status(403).json({ error: "Log book ini sudah terkunci (Locked)." });
+    }
+
+    const now = new Date();
+
+    if (action === 'pause') {
+      const openLogs = await db.activityLog.findMany({
+        where: { okpLogId: okpLog.id, endTime: null }
+      });
+
+      for (const openLog of openLogs) {
+        const openStart = new Date(openLog.startTime || openLog.createdAt);
+        let dur = parseFloat(((now - openStart) / 60000).toFixed(2));
+        if (isNaN(dur) || dur < 0) dur = 0.01;
+        await db.activityLog.update({
+          where: { id: openLog.id },
+          data: { endTime: now, duration: dur, updatedBy: emailUser }
+        });
+      }
+
+      let coCode = await db.activityCode.findFirst({
+        where: {
+          OR: [
+            { code: { contains: "CO", mode: "insensitive" } },
+            { subActivity: { contains: "Changeover", mode: "insensitive" } },
+            { fullDescription: { contains: "Changeover", mode: "insensitive" } },
+            { fullDescription: { contains: "Lot", mode: "insensitive" } },
+            { category: { code: { in: ["CO", "PA", "DT"] } } }
+          ]
+        },
+        include: { category: true }
+      });
+
+      if (!coCode) {
+        coCode = await db.activityCode.findFirst({
+          where: { category: { code: { not: "PR" } } },
+          include: { category: true }
+        });
+      }
+
+      let newStoppage = null;
+      if (coCode) {
+        newStoppage = await db.activityLog.create({
+          data: {
+            okpLogId: okpLog.id,
+            activityCodeId: coCode.id,
+            startTime: now,
+            endTime: null,
+            duration: 0,
+            brRootCause: notes || "Change Lot / Changeover Line",
+            createdBy: emailUser,
+            updatedBy: emailUser
+          },
+          include: { activityCode: { include: { category: true } } }
+        });
+      }
+
+      if (okpLog.machineId) {
+        const { machineStates } = require("../lib/mqttListener");
+        machineStates[okpLog.machineId] = "STOP";
+      }
+
+      const { broadcastEvent } = require("../lib/realtime");
+      broadcastEvent("machine_state_change", {
+        machineId: okpLog.machineId,
+        machineName: okpLog.machine ? okpLog.machine.name : "Machine",
+        okpNumber: okpLog.okpNumber,
+        state: "STOP",
+        category: coCode ? (coCode.category ? coCode.category.code : "CO") : "CO",
+        activityCode: coCode ? coCode.code : "CO.1",
+        description: coCode ? coCode.fullDescription : "Changeover / Ganti Lot",
+        timestamp: now.toISOString()
+      }, okpLog.machine ? okpLog.machine.lineProcessId : null);
+
+      return res.status(200).json({
+        message: "Lini produksi dihentikan sementara untuk Change Lot.",
+        status: "STOP",
+        activityLog: newStoppage
+      });
+    }
+
+    const updatedOkp = await db.okpLog.update({
+      where: { id: okpLog.id },
+      data: {
+        lotNumber: lotNumber || okpLog.lotNumber,
+        updatedBy: emailUser
+      }
+    });
+
+    if (action === 'update_only') {
+      return res.status(200).json({
+        message: "Nomor Lot berhasil diperbarui.",
+        okpLog: updatedOkp
+      });
+    }
+
+    const openLogs = await db.activityLog.findMany({
+      where: { okpLogId: okpLog.id, endTime: null }
+    });
+
+    for (const openLog of openLogs) {
+      const openStart = new Date(openLog.startTime || openLog.createdAt);
+      let dur = parseFloat(((now - openStart) / 60000).toFixed(2));
+      if (isNaN(dur) || dur < 0) dur = 0.01;
+      await db.activityLog.update({
+        where: { id: openLog.id },
+        data: { endTime: now, duration: dur, updatedBy: emailUser }
+      });
+    }
+
+    let prCode = await db.activityCode.findFirst({
+      where: { code: "PR.1" }
+    });
+    if (!prCode) {
+      prCode = await db.activityCode.findFirst({
+        where: { category: { code: "PR" } }
+      });
+    }
+
+    let newPrLog = null;
+    if (prCode) {
+      newPrLog = await db.activityLog.create({
+        data: {
+          okpLogId: okpLog.id,
+          activityCodeId: prCode.id,
+          startTime: now,
+          endTime: null,
+          duration: 0,
+          createdBy: emailUser,
+          updatedBy: emailUser
+        }
+      });
+    }
+
+    if (okpLog.machineId) {
+      const { machineStates } = require("../lib/mqttListener");
+      machineStates[okpLog.machineId] = "RUN";
+    }
+
+    await recalculateOkpLogOee(okpLog.id, db);
+
+    const { broadcastEvent } = require("../lib/realtime");
+    broadcastEvent("machine_state_change", {
+      machineId: okpLog.machineId,
+      machineName: okpLog.machine ? okpLog.machine.name : "Machine",
+      okpNumber: okpLog.okpNumber,
+      lotNumber: updatedOkp.lotNumber,
+      state: "RUN",
+      category: "PR",
+      activityCode: prCode ? prCode.code : "PR.1",
+      description: "Normal Production Run",
+      timestamp: now.toISOString()
+    }, okpLog.machine ? okpLog.machine.lineProcessId : null);
+
+    return res.status(200).json({
+      message: "Nomor Lot berhasil diperbarui dan lini produksi kembali RUNNING.",
+      okpLog: updatedOkp,
+      activityLog: newPrLog
+    });
+
+  } catch (error) {
+    console.error("Change Lot OKP Log Error:", error);
+    return res.status(500).json({ error: "Gagal memproses Change Lot." });
+  }
+}

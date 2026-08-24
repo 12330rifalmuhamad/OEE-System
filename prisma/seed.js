@@ -169,6 +169,16 @@ async function main() {
         fullDescription: "Replacing worn seamer chuck and setting height parameters",
       },
     }),
+    se8Preparation: await prisma.activityCode.create({
+      data: {
+        companyId: company.id,
+        categoryId: categories.SE.id,
+        code: "se.8",
+        mainActivity: "Setup & Adjustments",
+        subActivity: "Preparation & Line Clearance for Next OKP",
+        fullDescription: "Preparation, sanitization, and line clearance for next OKP batch",
+      },
+    }),
     minorStoppage: await prisma.activityCode.create({
       data: {
         companyId: company.id,
@@ -268,32 +278,74 @@ async function main() {
 
   // 6. SEED PRODUCTS
   console.log("📦 Seeding Products...");
+  const firstLineProcess = await prisma.lineProcess.findFirst({ where: { companyId: company.id } });
+  const lineProcessIdVal = firstLineProcess ? firstLineProcess.id : null;
+
   const products = [
     await prisma.product.create({
       data: {
         companyId: company.id,
-        productCode: "CHIL-KID-800",
-        name: "Chil Kid Platinum Vanilla",
-        size: "800g",
-        standarSpeed: 120.0, // 120 pcs/menit
+        lineProcessId: lineProcessIdVal,
+        articleCode: "ART-4001",
+        productCode: "PRD-CHILKID-800",
+        name: "Chil Kid Platinum Vanilla 800g",
+        lineCode: "LINE-A1",
+        batchSizeKg: 1200.0,
+        pcsPerCarton: 24,
+        netFill: 800,
+        processCategory: "Powder Packaging",
+        focusCategory: "Main Product",
+        productCategory: "Growing Up Milk",
+        stdSpeedFbMin: 120.0,
+        stdSpeedFilling: 120.0,
+        stdSpeedCbMin: 5.0,
+        stdSpeedBinShift: 4.0,
+        stdBatchCb: 50.0,
+        stdBatchMin: 240.0,
       },
     }),
     await prisma.product.create({
       data: {
         companyId: company.id,
-        productCode: "BMT-GOLD-400",
-        name: "Morinaga BMT Gold Regular",
-        size: "400g",
-        standarSpeed: 140.0, // 140 pcs/menit
+        lineProcessId: lineProcessIdVal,
+        articleCode: "ART-4002",
+        productCode: "PRD-BMTGOLD-400",
+        name: "Morinaga BMT Gold Regular 400g",
+        lineCode: "LINE-D1",
+        batchSizeKg: 1000.0,
+        pcsPerCarton: 12,
+        netFill: 400,
+        processCategory: "Powder Packaging",
+        focusCategory: "Infant Formula",
+        productCategory: "Starter Formula",
+        stdSpeedFbMin: 140.0,
+        stdSpeedFilling: 140.0,
+        stdSpeedCbMin: 11.6,
+        stdSpeedBinShift: 6.0,
+        stdBatchCb: 83.3,
+        stdBatchMin: 180.0,
       },
     }),
     await prisma.product.create({
       data: {
         companyId: company.id,
-        productCode: "CHIL-MIL-800",
-        name: "Chil Mil Regular Honey",
-        size: "800g",
-        standarSpeed: 110.0, // 110 pcs/menit
+        lineProcessId: lineProcessIdVal,
+        articleCode: "ART-4003",
+        productCode: "PRD-CHILMIL-800",
+        name: "Chil Mil Regular Honey 800g",
+        lineCode: "LINE-E2",
+        batchSizeKg: 1500.0,
+        pcsPerCarton: 24,
+        netFill: 800,
+        processCategory: "Powder Packaging",
+        focusCategory: "Follow-up Formula",
+        productCategory: "Growing Up Milk",
+        stdSpeedFbMin: 110.0,
+        stdSpeedFilling: 110.0,
+        stdSpeedCbMin: 4.58,
+        stdSpeedBinShift: 5.0,
+        stdBatchCb: 62.5,
+        stdBatchMin: 320.0,
       },
     }),
   ];

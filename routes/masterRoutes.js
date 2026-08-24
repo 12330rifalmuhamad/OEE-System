@@ -9,6 +9,7 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
+  bulkCreateProducts,
   getActivityCodes,
   createActivityCode,
   updateActivityCode,
@@ -43,6 +44,7 @@ router.delete("/machines/:id", deleteMachine);
 // Products
 router.get("/products", getProducts);
 router.post("/products", createProduct);
+router.post("/products/bulk", bulkCreateProducts);
 router.put("/products/:id", updateProduct);
 router.delete("/products/:id", deleteProduct);
 
