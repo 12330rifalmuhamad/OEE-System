@@ -1,0 +1,15 @@
+-- AlterTable
+ALTER TABLE "trOkpLog" ADD COLUMN     "decYield" DOUBLE PRECISION,
+ADD COLUMN     "fltJumlahBatch" DOUBLE PRECISION,
+ADD COLUMN     "fltReworkEjector" DOUBLE PRECISION,
+ADD COLUMN     "fltReworkFilling" DOUBLE PRECISION,
+ADD COLUMN     "fltReworkFlushingBase" DOUBLE PRECISION,
+ADD COLUMN     "fltReworkFlushingFlavour" DOUBLE PRECISION,
+ADD COLUMN     "fltReworkOther" DOUBLE PRECISION,
+ADD COLUMN     "fltReworkPacking" DOUBLE PRECISION,
+ADD COLUMN     "fltReworkSieve" DOUBLE PRECISION,
+ADD COLUMN     "fltSample" DOUBLE PRECISION,
+ADD COLUMN     "fltTotalInput" DOUBLE PRECISION,
+ADD COLUMN     "txtCategoryFocus" TEXT,
+ADD COLUMN     "txtCategoryProd" TEXT,
+ADD COLUMN     "txtWetDry" TEXT;
